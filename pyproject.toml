@@ -27,7 +27,11 @@ dependencies = [
 ablation = [
     "easyocr>=1.7",
 ]
-dev = ["pytest>=8.0"]
+dev = [
+    "mypy>=1.10",
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
 
 [project.scripts]
 ae = "ae.cli:app"
@@ -38,3 +42,35 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["ae"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "RUF", "N", "D"]
+ignore = ["D100", "D104", "D105", "D107", "D203", "D213", "E501"]
+# Typographic characters that are matched on purpose (OCR/text normalisation, chunk prefix separator).
+allowed-confusables = ["–", "‘", "’", "−", "×", "›", "∪"]
+
+# Typer declares CLI parameters through call defaults; these calls are immutable markers.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Argument", "typer.Option"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+
+[tool.ruff.format]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+addopts = "-m 'not api'"
+markers = [
+    "integration: needs the built native page cache / index (`make ingest BACKEND=native`); skips cleanly when absent",
+    "api: needs ANTHROPIC_API_KEY (excluded by default; run with `-m api`)",
+]

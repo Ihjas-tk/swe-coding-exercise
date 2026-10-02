@@ -514,7 +514,6 @@ ORDER BY unit_cost_usd DESC LIMIT 1</pre></div>
     <div class="card stack"><h4>Mixed-case product codes</h4><p style="font-size:.92rem">"Falcon-VT1" isn't detected as a product code, so its document gets no boost. It still works on the dev set, but a harder question could miss.</p></div>
     <div class="card stack"><h4>Retrieval "not found" gate is off</h4><p style="font-size:.92rem">Confidence signals are computed, but the threshold (<code>min_top_score</code>) defaults to 0 everywhere, so retrieval never declines by itself. All "not found" decisions are made in step 4's checks. The README lists tuning this gate as future work.</p></div>
     <div class="card stack"><h4>Small test set</h4><p style="font-size:.92rem">20 answerable questions, all over 7 documents. The README suggests adding distractor documents to see whether recall holds when there's more to get lost in.</p></div>
-    <div class="card stack"><h4>Code tidy-ups an interviewer might spot</h4><p style="font-size:.92rem">In <code>parse_query</code>, the first <code>hard = …</code> line is immediately overwritten by the second. In <code>pipeline.py</code>, the "scope gate" <code>if</code> block ends in <code>pass</code> and does nothing. Both are harmless.</p></div>
   </div>
 </section>
 

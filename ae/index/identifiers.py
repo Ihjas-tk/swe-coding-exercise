@@ -1,17 +1,21 @@
-"""Exact identifiers in questions and chunks (part numbers, patent numbers, figure ids,
-reference numerals, value+unit). Shared by the chunker (identifier column for BM25),
+"""Exact identifiers in questions and chunks.
+
+Part numbers, patent numbers, figure ids, reference numerals and value+unit. Shared by the chunker (identifier column for BM25),
 the query parser (routing / ID boost) and the verifier (numbers in answers must appear
 in cited text).
 
 Every identifier is stored in two normalised forms so BM25 can match however the user
 types it: "fvt-esc-40a" (hyphens kept) and "fvtesc40a" (alphanumerics only).
 """
+
 from __future__ import annotations
 
 import re
 
 PART_RE = re.compile(r"\b[A-Z]{2,}[A-Z0-9]*(?:-[A-Z0-9]+)+\b")  # FVT-ESC-40A, EV-BMS-100, BMS-CONN-M12-4
-PATENT_RE = re.compile(r"\bUS\s?-?\s?(?:\d{1,2}[,/]?\d{3}[,/]?\d{3,4}|\d{4}/\d{7})\s?(?:[AB]\d)?\b", re.I)  # US 8,485,576 B2 / US2017/0320570A1
+PATENT_RE = re.compile(
+    r"\bUS\s?-?\s?(?:\d{1,2}[,/]?\d{3}[,/]?\d{3,4}|\d{4}/\d{7})\s?(?:[AB]\d?)?\b", re.I
+)  # US 8,485,576 B2 / US2017/0320570A1 / US2988237A (kind letter with no digit)
 FIG_RE = re.compile(r"\b(?:FIG(?:URE)?S?\.?|Figures?)\s*(\d{1,3}[A-Za-z]?)\b", re.I)
 UNIT = r"(?:mA|kA|A|mV|kV|V|mW|kW|W|Hz|kHz|MHz|GHz|°C|°F|mm|cm|km|m|kg|g|N·m|N\.m|Nm|rpm|ms|µs|s|kbps|Mbps|arcmin|dB|%|bar|psi|kOhm|Ohm|Ω|mAh|Ah|Wh|kWh)"
 VALUE_UNIT_RE = re.compile(rf"(?<![\w.])(\d+(?:[.,]\d+)?)\s*({UNIT})(?![\w])")
@@ -19,10 +23,12 @@ NUMERAL_TOKEN_RE = re.compile(r"\b(\d{1,4}[a-z]?'{0,2})\b")
 
 
 def norm(s: str) -> str:
+    """Lowercase alphanumerics only ('FVT-ESC-40A' -> 'fvtesc40a')."""
     return re.sub(r"[^a-z0-9]+", "", s.lower())
 
 
 def norm_hyphen(s: str) -> str:
+    """Lowercase, hyphens kept ('FVT-ESC-40A' -> 'fvt-esc-40a')."""
     return re.sub(r"[^a-z0-9-]+", "", s.lower().replace(" ", "-").replace("/", "-"))
 
 
@@ -41,7 +47,9 @@ def extract_identifiers(text: str, known_numerals: set[str] | None = None) -> li
         add(norm(m.group(0)))
     for m in FIG_RE.finditer(text):
         add("fig" + m.group(1).lower())
-    for m in VALUE_UNIT_RE.finditer(text):
+    # Values with units are read from the text with part numbers blanked out, so the "40A"
+    # tail of "FVT-ESC-40A" is not also reported as 40 amps.
+    for m in VALUE_UNIT_RE.finditer(PART_RE.sub(" ", text)):
         add(norm(m.group(1) + m.group(2)), f"{m.group(1)} {m.group(2)}".lower())
     if known_numerals:
         # digits glued to a hyphenated identifier ("EV-BMS-100") or a unit are not reference numerals

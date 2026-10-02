@@ -1,12 +1,12 @@
 # How extraction works
 
 Three backends produce the same `ParsedDocument` (pages → ordered text / table / figure
-blocks, each with document, page and bounding box). `thin` is a hand-assembled stack of
-small libraries; `docling` is IBM's layout-model pipeline; `hybrid` uses `thin` for every page and, on pages
-that needed OCR, adds Docling's table and figure blocks (thin's text, Docling's layout:
+blocks, each with document, page and bounding box). `native` is a hand-assembled stack of
+small libraries; `docling` is IBM's layout-model pipeline; `hybrid` uses `native` for every page and, on pages
+that needed OCR, adds Docling's table and figure blocks (native's text, Docling's layout:
 each where it measured best).
 
-## Text and reading order — PyMuPDF (`ae/extract/thin/text.py`)
+## Text and reading order — PyMuPDF (`ae/extract/native/text.py`)
 
 **What the library does.** `page.get_text("dict")` walks the page's content stream and
 groups glyphs into spans → lines → blocks using MuPDF's structured-text device: glyphs on
@@ -56,7 +56,7 @@ the same coordinates, so the Value cell physically overflows into Notes. We retu
 overall); every parser we tried, Docling included, returns the same split. A fix would
 need semantics (units belong with their number), which we chose not to encode.
 Scanned tables are not detected at all by this backend (no ruling lines in a bitmap); on
-OmniDocBench's 19 scanned tables thin scores TEDS 0.0 against Docling's 0.53, which is
+OmniDocBench's 19 scanned tables native scores TEDS 0.0 against Docling's 0.53, which is
 the main reason `hybrid` exists.
 
 ## Figures — PyMuPDF image rectangles + caption linking (`figures.py`)
@@ -100,7 +100,7 @@ and "sAcooperate" where the figure label "64" touches the column edge; page CER 
 ARTICLE TRANSFER PROGRAMMED ARTICLE TRANSFER", the abstract, ...): CER 21.8 % with its
 Tesseract driver and 22.7 % with its default EasyOCR engine, so the duplication comes from
 overlapping layout regions on this page, not from the OCR driver. That measurement is why
-`hybrid` keeps thin's OCR text on scanned pages and takes only Docling's table and figure
+`hybrid` keeps native's OCR text on scanned pages and takes only Docling's table and figure
 boxes from them.
 
 ## Docling (`ae/extract/docling_backend.py`)

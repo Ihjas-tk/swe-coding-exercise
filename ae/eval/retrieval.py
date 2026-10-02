@@ -4,6 +4,7 @@ Unit is the page (citations are page-level): the ranked list of distinct (doc, p
 from the fused chunk ranking. Ablations: retrieval mode (bm25 / dense / hybrid), embedding
 model, extraction backend, and chunk kinds excluded (e.g. without table_row chunks).
 """
+
 from __future__ import annotations
 
 import json
@@ -18,13 +19,20 @@ KS = (1, 3, 5, 10)
 TYPES = ("factual", "table", "figure", "structured")
 
 
-def recall_at_k(backend: str, mode: str = "hybrid", embed_model: str | None = None, exclude_kinds: tuple[str, ...] = (), questions: Path = Path("dev_set/questions.json")) -> dict:
+def recall_at_k(
+    backend: str,
+    mode: str = "hybrid",
+    embed_model: str | None = None,
+    exclude_kinds: tuple[str, ...] = (),
+    questions: Path = Path("dev_set/questions.json"),
+) -> dict:
+    """Page-level Recall@k by question type for one retrieval configuration."""
     store = IndexStore(index_db(backend))
     aliases = doc_aliases(store)
-    qs = [q for q in json.load(open(questions)) if q["evidence"]]
-    hits = defaultdict(lambda: {k: 0 for k in KS})
-    n = defaultdict(int)
-    ranks = {}
+    qs = [q for q in json.loads(questions.read_text()) if q["evidence"]]
+    hits: defaultdict[str, dict[int, int]] = defaultdict(lambda: dict.fromkeys(KS, 0))
+    n: defaultdict[str, int] = defaultdict(int)
+    ranks: dict[str, int | None] = {}
     for q in qs:
         gold = {(e["doc"], e["page"]) for e in q["evidence"]}
         pq = parse_query(q["question"], store, aliases)
@@ -48,10 +56,18 @@ def recall_at_k(backend: str, mode: str = "hybrid", embed_model: str | None = No
                 hits["all"][k] += 1
     store.close()
     table = {t: {f"R@{k}": round(hits[t][k] / n[t], 3) for k in KS} | {"n": n[t]} for t in (*TYPES, "all") if n[t]}
-    return {"backend": backend, "mode": mode, "embed_model": embed_model, "exclude_kinds": list(exclude_kinds), "recall": table, "ranks": ranks}
+    return {
+        "backend": backend,
+        "mode": mode,
+        "embed_model": embed_model,
+        "exclude_kinds": list(exclude_kinds),
+        "recall": table,
+        "ranks": ranks,
+    }
 
 
 def ablations(backends: list[str], embed_models: list[str]) -> list[dict]:
+    """Recall@k for every mode, embedding model and chunk-kind ablation per backend."""
     out = []
     for be in backends:
         store = IndexStore(index_db(be))

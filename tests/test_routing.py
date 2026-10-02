@@ -1,16 +1,18 @@
 """Query parsing/routing and keyword retrieval on the built index (no LLM calls)."""
-from pathlib import Path
 
 import pytest
 
 from ae.index.store import IndexStore, index_db
 
-pytestmark = pytest.mark.skipif(not index_db("thin").exists(), reason="run `make ingest BACKEND=thin` first")
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(not index_db("native").exists(), reason="run `make ingest BACKEND=native` first"),
+]
 
 
 @pytest.fixture(scope="module")
 def store():
-    s = IndexStore(index_db("thin"))
+    s = IndexStore(index_db("native"))
     yield s
     s.close()
 
@@ -20,7 +22,12 @@ def test_routes(store):
 
     al = doc_aliases(store)
     q = parse_query("What component is labelled 160 in FIG. 2 of US8,485,576 B2?", store, al)
-    assert q.route == "numeral" and q.numerals == ["160"] and q.fig_id == "FIG. 2" and q.doc == "US8485576B2_robotic_gripper.pdf"
+    assert (
+        q.route == "numeral"
+        and q.numerals == ["160"]
+        and q.fig_id == "FIG. 2"
+        and q.doc == "US8485576B2_robotic_gripper.pdf"
+    )
     q = parse_query("How many test runs failed in the test log?", store, al)
     assert q.route == "sql"
     q = parse_query("What is the maximum discharge current rating of the EV-BMS-100?", store, al)

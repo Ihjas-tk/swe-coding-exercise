@@ -8,7 +8,10 @@ Everything a grader may want to change is an environment variable:
   AE_BACKEND          default hybrid (extraction backend used by `ask`)
   AE_CORPUS           directory to ingest instead of the built-in patents/ design_docs/ structured/
   AE_INDEX            index namespace (default "" = data/index/<backend>.sqlite; "ext" -> data/index/ext/<backend>.sqlite)
+  AE_DOCLING_OCR      default tesseract; easyocr is the OCR-engine ablation for the Docling backend
+  AE_LOG              console log level, default INFO (the log file always gets DEBUG)
 """
+
 from __future__ import annotations
 
 import os
@@ -16,14 +19,15 @@ from pathlib import Path
 
 
 def load_dotenv() -> None:
-    for d in [Path.cwd(), *Path.cwd().parents]:
-        f = d / ".env"
-        if f.exists():
-            for line in f.read_text().splitlines():
+    """Load KEY=VALUE pairs from the nearest .env without overriding the environment."""
+    for directory in [Path.cwd(), *Path.cwd().parents]:
+        env_file = directory / ".env"
+        if env_file.exists():
+            for line in env_file.read_text().splitlines():
                 line = line.strip()
                 if line and not line.startswith("#") and "=" in line:
-                    k, v = line.split("=", 1)
-                    os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+                    key, value = line.split("=", 1)
+                    os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
             return
 
 
@@ -35,7 +39,10 @@ EMBED_MODEL = os.environ.get("AE_EMBED_MODEL", "ibm-granite/granite-embedding-en
 BACKEND = os.environ.get("AE_BACKEND", "hybrid")
 CORPUS = os.environ.get("AE_CORPUS")  # None = built-in corpus dirs
 INDEX = os.environ.get("AE_INDEX", "")
+DOCLING_OCR = os.environ.get("AE_DOCLING_OCR", "tesseract")  # tesseract | easyocr
+LOG_LEVEL = os.environ.get("AE_LOG", "INFO")
 
 
 def api_key() -> str | None:
+    """Return the Anthropic API key, or None when unset."""
     return os.environ.get("ANTHROPIC_API_KEY")

@@ -22,7 +22,7 @@ computed from the files. `data/eval/EXTERNAL.md` is the generated report.
 
 ## Results (final run)
 
-| Metric | thin | docling | hybrid (default) |
+| Metric | native | docling | hybrid (default) |
 |---|---|---|---|
 | Correct, 44 answerable (numbers within 1 % and LLM grader) | 40 | 38 | 40 |
 | Cited page in gold evidence | 42 | 38 | 42 |
@@ -37,7 +37,7 @@ default backend; the dev corpus stayed at 20/20 throughout (re-checked after eve
 
 | Gap | Trigger | Stage | Fix |
 |---|---|---|---|
-| Numbers split across font spans came out as "0 .45" | arXiv Table II | thin text extraction | spans joined by physical gap, not a blanket space |
+| Numbers split across font spans came out as "0 .45" | arXiv Table II | native text extraction | spans joined by physical gap, not a blanket space |
 | Spreadsheet header below title rows; a column with no header | OLSK BOM | structured loader | header = row with most text cells; unnamed columns `col_N` |
 | Multi-sheet workbook rows collided on chunk ids | OLSK BOM | indexing | ids keyed on sheet |
 | Numeric column with a few text cells typed TEXT, so MAX failed | OLSK cost column ("16H") | structured loader | ≥ 90 % numeric ⇒ numeric; minority cells NULL |
@@ -52,8 +52,8 @@ default backend; the dev corpus stayed at 20/20 throughout (re-checked after eve
 ## Gaps left open (limitations)
 
 - **Superscripts in OCR text layers**: "576 × 10⁸" reads "576 X 108"; the answer reproduces the corrupted text (x27).
-- **Numbers read off figures**: the flat-cable width in the X-57 paper is only in the drawing; thin declines, the VLM reads 0.83 in for 0.61 in (x19).
+- **Numbers read off figures**: the flat-cable width in the X-57 paper is only in the drawing; native declines, the VLM reads 0.83 in for 0.61 in (x19).
 - **Prose outranked by many short table rows**: the BIRDS-5 soak-time sentence ranks ~20th behind "Cold Soak 1 Start" rows (x39). Docling finds it (its chunking differs); a kind-aware prior or a reranker is the likely fix.
-- **"Which figure shows X" on real patents**: the gripper's control unit appears in FIG. 11; thin picked the wrong sheet from the VLM descriptions (x04).
+- **"Which figure shows X" on real patents**: the gripper's control unit appears in FIG. 11; native picked the wrong sheet from the VLM descriptions (x04).
 - **Docling-specific**: DOCX superscripts dropped ("1 x 10 Pa"), DOCX table pages mis-mapped, numeral definition pages differ from the gold (x02/x08/x36–x39).
 - **Gold-set lessons**: two of my own expected answers were wrong or ambiguous (file order vs chronological order; cross-referenced numerals in references). Reading the page is not enough; compute what can be computed and keep references to the asked value.

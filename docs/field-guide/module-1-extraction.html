@@ -296,7 +296,7 @@ footer{margin-top:64px;border-top:1.5px solid var(--ink);padding-top:12px;font-f
     <div><dt>bbox (bounding box)</dt><dd>The rectangle a block occupies on the page: left, top, right, bottom. Measured in "points" (1/72 inch). A US letter page is 612 × 792 points.</dd></div>
     <div><dt>reading order</dt><dd>The order a person would read the blocks in. This is hard on two-column pages.</dd></div>
     <div><dt>caption</dt><dd>The line under a picture or table, such as "Figure 2 — BMS enclosure…".</dd></div>
-    <div><dt>backend</dt><dd>One complete way of doing extraction. This repo has three: <b>thin</b>, <b>docling</b> and <b>hybrid</b>.</dd></div>
+    <div><dt>backend</dt><dd>One complete way of doing extraction. This repo has three: <b>native</b>, <b>docling</b> and <b>hybrid</b>.</dd></div>
     <div><dt>ParsedDocument</dt><dd>The name of extraction's output: one file → its pages → each page's blocks.</dd></div>
     <div><dt>cache</dt><dd>Saved results, so a page is only processed once even if you re-run the program.</dd></div>
   </dl>
@@ -416,15 +416,15 @@ line from (240,140) to (240,260)
   </div>
   <details class="code"><summary>▸ In the code: who handles which file</summary><div>
     <p><code>ae/extract/base.py</code> → <span class="fn">parse(path, backend)</span> looks at the file extension and backend and calls the right reader:</p>
-    <p>• PDF → <code>thin/pdf.py</code>, <code>docling_backend.py</code>, or <code>parse_hybrid</code> in base.py<br>
-       • DOCX → <code>thin/docx.py</code> (with <code>pagemap.py</code> for page numbers)<br>
+    <p>• PDF → <code>native/pdf.py</code>, <code>docling_backend.py</code>, or <code>parse_hybrid</code> in base.py<br>
+       • DOCX → <code>native/docx.py</code> (with <code>pagemap.py</code> for page numbers)<br>
        • CSV/XLSX → <code>structured.py</code>, called directly by the ingest step (<code>ae/index/ingest.py</code>)</p>
   </div></details>
 </section>
 
 <section id="q1">
   <div class="head"><span class="no">B4</span><h2>The five questions asked of every PDF page</h2></div>
-  <p class="prose">The <b>thin</b> backend (the one written by hand in this repo) handles a PDF one page at a time, by answering five questions in order. Once you know these five, you know how <code>ae/extract/thin/</code> works.</p>
+  <p class="prose">The <b>native</b> backend (the one written by hand in this repo) handles a PDF one page at a time, by answering five questions in order. Once you know these five, you know how <code>ae/extract/native/</code> works.</p>
 
   <div class="card stack">
     <span class="eyebrow">question 1 of 5</span>
@@ -446,7 +446,7 @@ line from (240,140) to (240,260)
       </svg></div>
     </div>
     <details class="code"><summary>▸ In the code</summary><div>
-      <p><code>ae/extract/thin/ocr.py</code>: <span class="fn">needs_ocr</span> makes the decision and <span class="fn">text_quality</span> scores the text. <span class="fn">ocr_page</span> runs Tesseract on a 300 dpi image of the page and groups its words into paragraphs.</p>
+      <p><code>ae/extract/native/ocr.py</code>: <span class="fn">needs_ocr</span> makes the decision and <span class="fn">text_quality</span> scores the text. <span class="fn">ocr_page</span> runs Tesseract on a 300 dpi image of the page and groups its words into paragraphs.</p>
       <p>The thresholds sit at the top of the file: <code>MIN_TEXT_CHARS = 30</code>, <code>MIN_TEXT_QUALITY = 0.6</code>, <code>OCR_DPI = 300</code>.</p>
     </div></details>
   </div>
@@ -474,7 +474,7 @@ line from (240,140) to (240,260)
       </svg></div>
     </div>
     <details class="code"><summary>▸ In the code</summary><div>
-      <p><code>ae/extract/thin/text.py</code>: <span class="fn">raw_blocks_from_page</span> asks PyMuPDF for blocks, <span class="fn">merge_adjacent</span> glues split paragraphs, <span class="fn">classify_role</span> applies the role rules, and <span class="fn">build_text_blocks</span> runs all three in order.</p>
+      <p><code>ae/extract/native/text.py</code>: <span class="fn">raw_blocks_from_page</span> asks PyMuPDF for blocks, <span class="fn">merge_adjacent</span> glues split paragraphs, <span class="fn">classify_role</span> applies the role rules, and <span class="fn">build_text_blocks</span> runs all three in order.</p>
     </div></details>
   </div>
 
@@ -497,7 +497,7 @@ line from (240,140) to (240,260)
       <div class="illus"><svg id="roSvg" viewBox="0 0 300 400" role="img" aria-label="Mock two-column page with numbered reading order"></svg></div>
     </div>
     <details class="code"><summary>▸ In the code</summary><div>
-      <p><code>ae/extract/thin/text.py</code>: <span class="fn">detect_columns</span> finds the gaps (a gap must be wider than <code>MIN_GUTTER = 12</code> points), and <span class="fn">order_blocks</span> does the strip-then-column reading. A block counts as full-width if it's wider than 62% of the text area (<code>FULL_WIDTH_FRAC</code>).</p>
+      <p><code>ae/extract/native/text.py</code>: <span class="fn">detect_columns</span> finds the gaps (a gap must be wider than <code>MIN_GUTTER = 12</code> points), and <span class="fn">order_blocks</span> does the strip-then-column reading. A block counts as full-width if it's wider than 62% of the text area (<code>FULL_WIDTH_FRAC</code>).</p>
       <p>PyMuPDF has a built-in <code>sort=True</code> option, and it's exactly the "top-to-bottom (wrong)" button above. That's why the repo writes its own.</p>
       <p>The same function runs a second time after tables and figures are found, so they're placed in reading order too.</p>
     </div></details>
@@ -526,7 +526,7 @@ line from (240,140) to (240,260)
     </div>
     <div class="note"><b>Limit</b>A scanned page has no drawn lines, only pixels, so this method can't find tables on scans. That's the main reason the <b>hybrid</b> backend exists (B5).</div>
     <details class="code"><summary>▸ In the code</summary><div>
-      <p><code>ae/extract/thin/tables.py</code>: <span class="fn">extract_tables</span> runs pdfplumber's <code>find_tables</code>. It first uses the "lines" method and only falls back to guessing columns from text alignment if no lined table exists, with strict checks, because guessing found a fake 19×8 table on a patent page. <span class="fn">_fill_cells</span> puts the PyMuPDF words into cells. <span class="fn">_title_for</span> attaches the nearest heading above as the table title. <span class="fn">drop_text_inside_tables</span> removes the duplicates.</p>
+      <p><code>ae/extract/native/tables.py</code>: <span class="fn">extract_tables</span> runs pdfplumber's <code>find_tables</code>. It first uses the "lines" method and only falls back to guessing columns from text alignment if no lined table exists, with strict checks, because guessing found a fake 19×8 table on a patent page. <span class="fn">_fill_cells</span> puts the PyMuPDF words into cells. <span class="fn">_title_for</span> attaches the nearest heading above as the table title. <span class="fn">drop_text_inside_tables</span> removes the duplicates.</p>
     </div></details>
   </div>
 
@@ -550,19 +550,19 @@ line from (240,140) to (240,260)
       </svg></div>
     </div>
     <details class="code"><summary>▸ In the code</summary><div>
-      <p><code>ae/extract/thin/figures.py</code>: <span class="fn">find_figure_boxes</span>, <span class="fn">crop_figure</span>, <span class="fn">link_caption</span> and <span class="fn">ocr_labels</span>, all called by <span class="fn">extract_figures</span>.</p>
-      <p><code>ae/extract/thin/pdf.py</code>: <span class="fn">_figures_from_scan</span> handles scanned pages, where the whole page is one image, so it guesses each picture's area from where its caption sits. <span class="fn">_link_cross_page_captions</span> handles the caption-on-next-page case.</p>
+      <p><code>ae/extract/native/figures.py</code>: <span class="fn">find_figure_boxes</span>, <span class="fn">crop_figure</span>, <span class="fn">link_caption</span> and <span class="fn">ocr_labels</span>, all called by <span class="fn">extract_figures</span>.</p>
+      <p><code>ae/extract/native/pdf.py</code>: <span class="fn">_figures_from_scan</span> handles scanned pages, where the whole page is one image, so it guesses each picture's area from where its caption sits. <span class="fn">_link_cross_page_captions</span> handles the caption-on-next-page case.</p>
       <p><code>pdf.py</code> also contains <span class="fn">_parse_page</span>, which runs questions 1–5 in order for one page. It's the best single function to read first.</p>
     </div></details>
   </div>
 </section>
 
 <section id="backends">
-  <div class="head"><span class="no">B5</span><h2>Three "readers": thin, docling and hybrid</h2></div>
-  <p class="prose">Everything in B4 describes <b>thin</b>, the reader written by hand from small tools. The repo also has two other readers. All three produce exactly the same output format, so the rest of the system doesn't care which one ran, and they can be compared fairly.</p>
+  <div class="head"><span class="no">B5</span><h2>Three "readers": native, docling and hybrid</h2></div>
+  <p class="prose">Everything in B4 describes <b>native</b>, the reader written by hand from small tools. The repo also has two other readers. All three produce exactly the same output format, so the rest of the system doesn't care which one ran, and they can be compared fairly.</p>
   <div class="be">
     <div class="card">
-      <span class="eyebrow">reader 1</span><h3>thin</h3>
+      <span class="eyebrow">reader 1</span><h3>native</h3>
       <p class="analogy" style="font-size:.9rem"><b>Like</b>someone with a ruler and a checklist of rules.</p>
       <p style="font-size:.92rem">Hand-written rules on top of PyMuPDF, pdfplumber and Tesseract. Every decision can be explained line by line. Very accurate on normal PDFs. Blind to tables and uncaptioned pictures on <em>scanned</em> pages.</p>
     </div>
@@ -574,13 +574,13 @@ line from (240,140) to (240,260)
     <div class="card def">
       <span class="eyebrow" style="color:var(--redline)">reader 3 · the default</span><h3>hybrid</h3>
       <p class="analogy" style="font-size:.9rem"><b>Like</b>the ruler-and-checklist person, who calls in the AI only for photographed pages.</p>
-      <p style="font-size:.92rem">Runs thin on every page. Only on scanned pages, it also runs docling and borrows docling's tables and pictures, while keeping thin's text. Each reader is used where it did best in testing.</p>
+      <p style="font-size:.92rem">Runs native on every page. Only on scanned pages, it also runs docling and borrows docling's tables and pictures, while keeping native's text. Each reader is used where it did best in testing.</p>
     </div>
   </div>
   <div class="card scroll-x">
     <h4 style="margin-bottom:8px">The test results that chose hybrid</h4>
     <table class="score">
-      <tr><th>what was measured</th><th>in plain words</th><th>thin</th><th>docling</th><th>hybrid</th></tr>
+      <tr><th>what was measured</th><th>in plain words</th><th>native</th><th>docling</th><th>hybrid</th></tr>
       <tr><td>OCR errors on the scanned patent</td><td>How many letters came out wrong (lower is better)</td><td class="n win">0.13%</td><td class="n lose">21.8%</td><td class="n win">0.13%</td></tr>
       <tr><td>Table cells correct</td><td>Out of 117 hand-checked cells</td><td class="n win">98.3%</td><td class="n">96.6%</td><td class="n win">98.3%</td></tr>
       <tr><td>Figure captions matched</td><td>Out of 9 figures</td><td class="n win">9 / 9</td><td class="n lose">3 / 9</td><td class="n win">9 / 9</td></tr>
@@ -588,11 +588,11 @@ line from (240,140) to (240,260)
       <tr><td>Pictures found on scans</td><td>Same benchmark, 50 pictures</td><td class="n lose">0 / 50</td><td class="n win">36 / 50</td><td class="n win">36 / 50</td></tr>
       <tr><td>Final answers correct</td><td>20 test questions, end to end</td><td class="n">20 / 20</td><td class="n">20 / 20</td><td class="n">20 / 20</td></tr>
     </table>
-    <p class="muted" style="font-size:.88rem;margin-top:10px">Read the rows like this: thin wins on text, docling wins on finding things in scans, and hybrid takes the better column in every row except the last, where all three tie. One honest caveat: on the outside benchmark's generic scans, docling's <em>text</em> was better than thin's (0.84 vs 0.75 similarity). Hybrid trusts thin's text because thin was far cleaner on this corpus's own scanned patent. Be ready to explain that trade-off.</p>
+    <p class="muted" style="font-size:.88rem;margin-top:10px">Read the rows like this: native wins on text, docling wins on finding things in scans, and hybrid takes the better column in every row except the last, where all three tie. One honest caveat: on the outside benchmark's generic scans, docling's <em>text</em> was better than native's (0.84 vs 0.75 similarity). Hybrid trusts native's text because native was far cleaner on this corpus's own scanned patent. Be ready to explain that trade-off.</p>
   </div>
   <details class="code"><summary>▸ In the code</summary><div>
     <p><code>ae/extract/docling_backend.py</code> runs docling and converts its output into our format. It forces docling to use Tesseract for OCR too, so the comparison is about layout, not about which OCR engine is better.</p>
-    <p><code>ae/extract/base.py</code>: <span class="fn">parse_hybrid</span> and <span class="fn">_merge_layout</span> are about 50 lines that show the whole hybrid idea. If docling's table covers some of thin's text, that text is dropped. If docling's picture overlaps a picture thin already found, thin's is kept.</p>
+    <p><code>ae/extract/base.py</code>: <span class="fn">parse_hybrid</span> and <span class="fn">_merge_layout</span> are about 50 lines that show the whole hybrid idea. If docling's table covers some of native's text, that text is dropped. If docling's picture overlaps a picture native already found, native's is kept.</p>
   </div></details>
 </section>
 
@@ -604,7 +604,7 @@ line from (240,140) to (240,260)
       <p style="font-size:.93rem">A .docx is a zip of XML files that lists paragraphs, tables and images in order. Reading it is easy and exact, using the <b>python-docx</b> library. The only missing piece is page numbers.</p>
       <p style="font-size:.93rem">So the code asks <b>LibreOffice</b> (free office software) to convert the document to PDF, then searches that PDF for the first few words of each paragraph to learn which page it landed on.</p>
       <div class="note"><b>Real snag</b>The RJA-40 spec table gets split across pages 1 and 2 in the LibreOffice version. The code records each piece on its own page and gives both pieces the same table ID.</div>
-      <details class="code"><summary>▸ In the code</summary><div><p><code>thin/docx.py</code> reads the XML. <code>pagemap.py</code> does the LibreOffice conversion (<span class="fn">render_to_pdf</span>), the page lookup (<span class="fn">PageLocator</span>) and the table splitting (<span class="fn">tables_by_page</span>). Without LibreOffice installed, everything is reported as page 1, and the output says so.</p></div></details>
+      <details class="code"><summary>▸ In the code</summary><div><p><code>native/docx.py</code> reads the XML. <code>pagemap.py</code> does the LibreOffice conversion (<span class="fn">render_to_pdf</span>), the page lookup (<span class="fn">PageLocator</span>) and the table splitting (<span class="fn">tables_by_page</span>). Without LibreOffice installed, everything is reported as page 1, and the output says so.</p></div></details>
     </div>
     <div class="card stack">
       <h3>Spreadsheets (.csv, .xlsx)</h3>
@@ -642,9 +642,9 @@ line from (240,140) to (240,260)
     <div class="card stack"><h4>The overprinted table cell</h4><p style="font-size:.92rem">In the Falcon-VT1 document, the PDF itself prints "MHz" and "with" on top of each other, so the value spills into the next column. Every reader tested gets this wrong. It's 2 cells out of 30, and it's a flaw in the file, not in the code.</p></div>
     <div class="card stack"><h4>OCR eats a "1"</h4><p style="font-size:.92rem">In patent drawings, the pointer line touches the digit, so Tesseract reads "110" as "10". The next step (indexing) repairs this using the patent text, which names every numbered part.</p></div>
     <div class="card stack"><h4>A label outside the picture</h4><p style="font-size:.92rem">The gripper patent's label "160" is printed just outside the embedded image, so no amount of image reading finds it. The patent text still defines it, so the answer is found that way.</p></div>
-    <div class="card stack"><h4>Docling writes text twice</h4><p style="font-size:.92rem">On the scanned patent, docling outputs the top-of-page text twice. Switching its OCR engine didn't help, so the fault is in its layout step. Hybrid avoids it by using thin's text.</p></div>
+    <div class="card stack"><h4>Docling writes text twice</h4><p style="font-size:.92rem">On the scanned patent, docling outputs the top-of-page text twice. Switching its OCR engine didn't help, so the fault is in its layout step. Hybrid avoids it by using native's text.</p></div>
     <div class="card stack"><h4>Page numbers disagree with the test set</h4><p style="font-size:.92rem">Two test questions cite a different page than the one the content actually renders on (EV-BMS-100 IP67; the RJA-40 table split). The answers are right; the page conventions differ. Both are documented in the README.</p></div>
-    <div class="card stack"><h4>One reading-order slip</h4><p style="font-size:.92rem">On page 1 of the UAV patent, a right-column header line gets read in the middle of the left column. Docling's AI gets this page more right than thin's rules.</p></div>
+    <div class="card stack"><h4>One reading-order slip</h4><p style="font-size:.92rem">On page 1 of the UAV patent, a right-column header line gets read in the middle of the left column. Docling's AI gets this page more right than native's rules.</p></div>
   </div>
 </section>
 
@@ -656,7 +656,7 @@ line from (240,140) to (240,260)
     <details><summary>How do you avoid mixing up two columns?</summary><div><p>Full-width blocks divide the page into strips. Inside each strip, a vertical gap marks the columns. Read the left column fully, then the right. It's not a simple top-to-bottom sort, because that interleaves the columns.</p></div></details>
     <details><summary>How are tables found?</summary><div><p>pdfplumber finds the drawn lines and builds cells from where they cross. PyMuPDF words fill the cells. This can't work on scans (no lines), so hybrid borrows docling's AI table detection there.</p></div></details>
     <details><summary>How are figures found and captioned?</summary><div><p>From image positions and clusters of line drawings. Each is cut out as a PNG. The nearest "Figure N" text below (or above) is its caption, with a fallback to the top of the next page.</p></div></details>
-    <details><summary>Why is hybrid the default?</summary><div><p>Thin had far cleaner text on our scanned patent (0.13% vs 21.8% letter errors) and matched all captions. Docling was the only one that could find tables and pictures on scans. Hybrid uses each for what it measured best at.</p></div></details>
+    <details><summary>Why is hybrid the default?</summary><div><p>Native had far cleaner text on our scanned patent (0.13% vs 21.8% letter errors) and matched all captions. Docling was the only one that could find tables and pictures on scans. Hybrid uses each for what it measured best at.</p></div></details>
     <details><summary>Why does a Word file need LibreOffice?</summary><div><p>A Word file has no pages until it's laid out. Answers must cite pages, so we lay it out with LibreOffice and look up where each piece of text landed.</p></div></details>
   </div>
 </section>
@@ -731,14 +731,14 @@ line from (240,140) to (240,260)
   var R=[
     ["ae/schema.py","The output format. Short and the foundation for everything. Look for: ParsedDocument → Page → TextBlock / TableBlock / FigureBlock."],
     ["ae/extract/base.py","The front door: parse() picks a reader by file type. Skip parse_hybrid for now."],
-    ["ae/extract/thin/pdf.py","Read _parse_page: it's the five questions from B4 in order. Use it as your map for the next four files."],
-    ["ae/extract/thin/ocr.py","Question 1. Look for: needs_ocr and text_quality."],
-    ["ae/extract/thin/text.py","Questions 2 and 3. Look for: classify_role, detect_columns, order_blocks."],
-    ["ae/extract/thin/tables.py","Question 4. Look for: extract_tables and _fill_cells."],
-    ["ae/extract/thin/figures.py","Question 5. Look for: find_figure_boxes and link_caption."],
+    ["ae/extract/native/pdf.py","Read _parse_page: it's the five questions from B4 in order. Use it as your map for the next four files."],
+    ["ae/extract/native/ocr.py","Question 1. Look for: needs_ocr and text_quality."],
+    ["ae/extract/native/text.py","Questions 2 and 3. Look for: classify_role, detect_columns, order_blocks."],
+    ["ae/extract/native/tables.py","Question 4. Look for: extract_tables and _fill_cells."],
+    ["ae/extract/native/figures.py","Question 5. Look for: find_figure_boxes and link_caption."],
     ["ae/extract/base.py (again)","Now read parse_hybrid and _merge_layout: the hybrid idea in about 50 lines."],
     ["ae/extract/docling_backend.py","Skim: how docling's output is converted into our format."],
-    ["ae/extract/thin/docx.py + pagemap.py","The Word path and the LibreOffice page lookup."],
+    ["ae/extract/native/docx.py + pagemap.py","The Word path and the LibreOffice page lookup."],
     ["ae/extract/structured.py","The spreadsheet path into SQLite."],
     ["docs/extraction.md","The repo's own write-up. It should read easily now."]
   ];

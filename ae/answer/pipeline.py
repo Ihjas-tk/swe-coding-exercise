@@ -1,34 +1,48 @@
 """End-to-end `ask`: parse -> route -> retrieve -> generate -> verify -> JSON in the brief's shape."""
+
 from __future__ import annotations
 
-import sqlite3
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from ae import config
-from ae.answer.generate import build_evidence, generate
+from ae.answer.generate import Draft, build_evidence, generate
 from ae.answer.verify import verify
-from ae.index.numerals import NumeralIndex
+from ae.index.numerals import NumeralEntry, NumeralIndex
 from ae.index.store import IndexStore, index_db
-from ae.log import TIMINGS, get_logger, timed
+from ae.log import get_logger
 from ae.retrieve.hybrid import retrieve
-
-log = get_logger(__name__)
 from ae.retrieve.query import ParsedQuery, doc_aliases, parse_query
 from ae.retrieve.sql import SQLResult, answer_sql
+
+log = get_logger(__name__)
 
 NOT_FOUND_TEXT = "Not found in the provided documents."
 
 
+def ingest_hint(backend: str) -> str:
+    """Return the command that builds `index_db(backend)` in the active index namespace."""
+    name = config.INDEX
+    if not name:
+        return f"`make ingest BACKEND={backend}`"
+    if name == "smoke":
+        return "`make smoke`"
+    if name == "ext":
+        return "`make external`"
+    return f"`uv run ae ingest --backend {backend} --corpus <dir> --name {name}`"
+
+
 @dataclass
 class Answer:
+    """Final answer in the brief's JSON shape, plus debug details."""
+
     answer: str
     citations: list[dict]
     not_found: bool
     debug: dict = field(default_factory=dict)
 
     def to_json(self, debug: bool = False) -> dict:
+        """Return the brief's JSON shape; include `debug` when asked."""
         out = {"answer": self.answer, "citations": self.citations, "not_found": self.not_found}
         if debug:
             out["debug"] = self.debug
@@ -36,11 +50,19 @@ class Answer:
 
 
 class Engine:
-    def __init__(self, backend: str | None = None, embed_model: str | None = None, mode: str = "hybrid", min_top_score: float = 0.0):
+    """Loads one index and answers questions against it (parse, route, retrieve, generate, verify)."""
+
+    def __init__(
+        self,
+        backend: str | None = None,
+        embed_model: str | None = None,
+        mode: str = "hybrid",
+        min_top_score: float = 0.0,
+    ):
         self.backend = backend or config.BACKEND
         self.db = index_db(self.backend)
         if not self.db.exists():
-            raise FileNotFoundError(f"index {self.db} not found; run `make ingest BACKEND={self.backend}` first")
+            raise FileNotFoundError(f"index {self.db} not found; build it with {ingest_hint(self.backend)}")
         self.store = IndexStore(self.db)
         self.aliases = doc_aliases(self.store)
         self.numerals = NumeralIndex.load(self.db)
@@ -50,6 +72,7 @@ class Engine:
         self.split_tables = self._split_tables()
 
     def _split_tables(self) -> dict[str, list[int]]:
+        """Table id -> every page it spans, for tables split across pages (citation policy)."""
         out: dict[str, set[int]] = {}
         for c in self.store.all_chunks():
             tid = c.meta.get("table_id") if c.kind in ("table", "table_row") else None
@@ -59,89 +82,132 @@ class Engine:
 
     # ---------------------------------------------------------------- routes
     def _numeral_lookup(self, pq: ParsedQuery) -> dict | None:
+        """Evidence block for the first asked numeral defined in the candidate documents.
+
+        Candidates are the named document, else the boosted ones, else all. A numeral defined
+        in several candidates yields an "ambiguous" block that tells the model to decline.
+        """
         docs = [pq.doc] if pq.doc else (pq.doc_boost or self.store.docs())
         for n in pq.numerals:
-            hits = [self.numerals.lookup(d, n) for d in docs]
-            hits = [h for h in hits if h]
+            hits = [h for d in docs if (h := self.numerals.lookup(d, n)) is not None]
             if len(hits) == 1:
-                e = hits[0]
-                fig = self.numerals.figures.get((e.doc, pq.fig_id)) if pq.fig_id else None
-                seen = self._numeral_seen_in_figure(e.doc, pq.fig_id, n) if pq.fig_id else None
-                page = fig.page if fig else e.pages[0]
-                note = ""
-                if pq.fig_id and seen is False:
-                    note = f" (label {n} was not read on the {pq.fig_id} image; the definition comes from the specification text)"
-                text = f"Reference numeral {n} in {e.doc} is defined in the specification as: {e.name}" + (f" (also written: {', '.join(e.variants)})" if e.variants else "") + f". Defined on page(s) {', '.join(map(str, e.pages))}." + (f" {pq.fig_id} is described as: {fig.title} (page {fig.page})." if fig else "") + note
-                # cite the figure's page (or the first definition page); other definition pages are not cited
-                return {"doc": e.doc, "page": page, "text": text, "extra_pages": [], "numeral": n, "name": e.name, "seen_in_figure": seen}
+                return self._numeral_block(pq, n, hits[0])
             if len(hits) > 1:
-                return {"doc": hits[0].doc, "page": hits[0].pages[0], "text": "Reference numeral " + n + " is defined in several documents: " + "; ".join(f"{h.doc}: {h.name}" for h in hits) + ". The question must name the document.", "extra_pages": [], "ambiguous": True}
+                return {
+                    "doc": hits[0].doc,
+                    "page": hits[0].pages[0],
+                    "text": "Reference numeral "
+                    + n
+                    + " is defined in several documents: "
+                    + "; ".join(f"{h.doc}: {h.name}" for h in hits)
+                    + ". The question must name the document.",
+                    "extra_pages": [],
+                    "ambiguous": True,
+                }
         return None
 
+    def _numeral_block(self, pq: ParsedQuery, n: str, e: NumeralEntry) -> dict:
+        """One numeral's definition; cites the named figure's page, else the first definition page."""
+        fig = self.numerals.figures.get((e.doc, pq.fig_id)) if pq.fig_id else None
+        seen = self._numeral_seen_in_figure(e.doc, pq.fig_id, n) if pq.fig_id else None
+        note = ""
+        if pq.fig_id and seen is False:
+            note = (
+                f" (label {n} was not read on the {pq.fig_id} image; the definition comes from the specification text)"
+            )
+        text = (
+            f"Reference numeral {n} in {e.doc} is defined in the specification as: {e.name}"
+            + (f" (also written: {', '.join(e.variants)})" if e.variants else "")
+            + f". Defined on page(s) {', '.join(map(str, e.pages))}."
+            + (f" {pq.fig_id} is described as: {fig.title} (page {fig.page})." if fig else "")
+            + note
+        )
+        return {
+            "doc": e.doc,
+            "page": fig.page if fig else e.pages[0],
+            "text": text,
+            "extra_pages": [],
+            "numeral": n,
+            "name": e.name,
+            "seen_in_figure": seen,
+        }
+
     def _numeral_seen_in_figure(self, doc: str, fig_id: str | None, n: str) -> bool | None:
+        """Whether label `n` was read on the figure's image (OCR matched or repaired); None if no such figure."""
         for c in self.store.all_chunks():
             if c.doc == doc and c.kind == "figure" and c.meta.get("figure_id") == fig_id:
                 labels = c.meta.get("labels", {})
                 return n in (labels.get("matched", []) + labels.get("repaired", []))
         return None
 
+    def _sql(self, question: str, dbg: dict) -> SQLResult | None:
+        """Text-to-SQL result, or None when the route failed (the retrieval evidence still answers)."""
+        try:
+            return answer_sql(question, self.db)
+        except Exception as e:  # text-to-SQL failure falls back to hybrid evidence
+            dbg["sql_error"] = f"{type(e).__name__}: {str(e)[:200]}"
+            log.warning(f"sql route failed, falling back to retrieval evidence: {dbg['sql_error']}")
+            return None
+
     # ---------------------------------------------------------------- main
-    def ask(self, question: str, debug: bool = False) -> Answer:
+    def ask(self, question: str) -> Answer:
+        """Answer one question; routing/retrieval/verification details are kept in `Answer.debug`.
+
+        Never raises for LLM/API failures: those become not_found with `debug["error"]` set,
+        so an evaluation run is not aborted by one bad call.
+        """
         t0 = time.time()
-        n_before = len(TIMINGS)
-        with timed("query.total", level=10):
-            ans = self._ask(question, t0)
-        stages = {r["stage"][len("query."):]: r["ms"] for r in TIMINGS[n_before:] if r["stage"].startswith("query.")}
-        ans.debug["timing_ms"] = stages
-        log.info(f"answered in {stages.get('total', 0)} ms route={ans.debug.get('route')} not_found={ans.not_found} | " + " ".join(f"{k}={v}" for k, v in stages.items() if k != "total") + f" | q={question[:70]!r}")
+        ans = self._ask(question)
+        ans.debug["ms"] = int((time.time() - t0) * 1000)
+        log.info(f"answered route={ans.debug.get('route')} not_found={ans.not_found} q={question[:70]!r}")
         return ans
 
-    def _ask(self, question: str, t0: float) -> Answer:
-        with timed("query.parse", level=10):
-            pq = parse_query(question, self.store, self.aliases)
-        dbg: dict = {"route": pq.route, "reasons": pq.reasons, "doc": pq.doc, "doc_boost": pq.doc_boost, "fig_id": pq.fig_id, "numerals": pq.numerals, "identifiers": pq.identifiers, "visual": pq.visual, "backend": self.backend}
-        # scope gate: a named figure that the named document does not define
-        if pq.doc and pq.fig_id and self.numerals.figures and not any(d == pq.doc for d, _ in self.numerals.figures) is False:
-            pass
-        with timed("query.retrieve", level=10):
-            result = retrieve(self.store, pq, self.embed_model, mode=self.mode)
+    def _ask(self, question: str) -> Answer:
+        """Parse -> retrieve -> route evidence -> (gate) -> generate -> verify."""
+        pq = parse_query(question, self.store, self.aliases)
+        dbg = _parse_debug(pq, self.backend)
+        result = retrieve(self.store, pq, self.embed_model, mode=self.mode)
         dbg["gate"] = result.gate
         dbg["pages"] = [(p.doc, p.page, round(p.score, 4)) for p in result.pages]
-        numeral_block = None
-        if pq.route == "numeral":
-            with timed("query.numeral_lookup", level=10):
-                numeral_block = self._numeral_lookup(pq)
-        sql: SQLResult | None = None
-        if pq.route == "sql":
-            try:
-                with timed("query.sql", level=10):
-                    sql = answer_sql(question, self.db)
-            except Exception as e:  # noqa: BLE001  (text-to-SQL failure falls back to hybrid evidence)
-                dbg["sql_error"] = f"{type(e).__name__}: {str(e)[:200]}"
-                log.warning(f"sql route failed, falling back to retrieval evidence: {dbg['sql_error']}")
+        numeral_block = self._numeral_lookup(pq) if pq.route == "numeral" else None
+        sql = self._sql(question, dbg) if pq.route == "sql" else None
         if sql:
             dbg["sql"] = {"sql": sql.sql, "rows": sql.rows[:5], "error": sql.error}
         if numeral_block:
             dbg["numeral"] = {k: v for k, v in numeral_block.items() if k != "text"}
-        if self.min_top_score and result.gate["top_page_score"] < self.min_top_score and not numeral_block and not (sql and sql.rows):
+        if self._gate_declines(result.gate, numeral_block, sql):
             dbg["gate_decline"] = True
-            return Answer(NOT_FOUND_TEXT, [], True, {**dbg, "ms": int((time.time() - t0) * 1000)})
+            return Answer(NOT_FOUND_TEXT, [], True, dbg)
         items = build_evidence(result, sql, numeral_block, self.split_tables)
         try:
-            with timed("query.generate", level=10, evidence=len(items)):
-                draft = generate(pq, items)
-        except Exception as e:  # noqa: BLE001  (LLM/API failure must not abort an evaluation run)
+            draft = generate(pq, items)
+        except Exception as e:  # LLM/API failure must not abort an evaluation run
             dbg["error"] = f"{type(e).__name__}: {str(e)[:200]}"
-            dbg["ms"] = int((time.time() - t0) * 1000)
             log.error(f"generation failed: {dbg['error']}")
             return Answer(NOT_FOUND_TEXT, [], True, dbg)
-        with timed("query.verify", level=10):
-            verdict = verify(pq, draft, self.min_top_score)
+        return self._finalise(pq, draft, dbg)
+
+    def _gate_declines(self, gate: dict, numeral_block: dict | None, sql: SQLResult | None) -> bool:
+        """Apply the retrieval not-found gate: weak top page and no numeral/SQL evidence (off when 0)."""
+        return bool(
+            self.min_top_score
+            and gate["top_page_score"] < self.min_top_score
+            and not numeral_block
+            and not (sql and sql.rows)
+        )
+
+    def _finalise(self, pq: ParsedQuery, draft: Draft, dbg: dict) -> Answer:
+        """Verify the draft and map its evidence ids to page citations (incl. caption / split-table pages)."""
+        verdict = verify(pq, draft)
         if verdict.failures:
-            log.info(f"verification declined the draft: {verdict.failures}")
-        dbg["draft"] = {"answer": draft.answer, "citations": draft.citations, "confidence": draft.confidence, "reasoning": draft.reasoning}
+            log.debug(f"verification declined the draft: {verdict.failures}")
+        dbg["draft"] = {
+            "answer": draft.answer,
+            "citations": draft.citations,
+            "confidence": draft.confidence,
+            "reasoning": draft.reasoning,
+        }
         dbg["verify"] = {"ok": verdict.ok, "failures": verdict.failures, "warnings": verdict.warnings}
-        dbg["ms"] = int((time.time() - t0) * 1000)
         if verdict.not_found:
             return Answer(NOT_FOUND_TEXT, [], True, dbg)
         cits: list[dict] = []
@@ -151,3 +217,18 @@ class Engine:
                 if c not in cits:
                     cits.append(c)
         return Answer(draft.answer, cits, False, dbg)
+
+
+def _parse_debug(pq: ParsedQuery, backend: str) -> dict:
+    """Record the parser's decisions for `Answer.debug`."""
+    return {
+        "route": pq.route,
+        "reasons": pq.reasons,
+        "doc": pq.doc,
+        "doc_boost": pq.doc_boost,
+        "fig_id": pq.fig_id,
+        "numerals": pq.numerals,
+        "identifiers": pq.identifiers,
+        "visual": pq.visual,
+        "backend": backend,
+    }

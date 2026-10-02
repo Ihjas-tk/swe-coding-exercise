@@ -299,7 +299,7 @@ footer{margin-top:64px;border-top:1.5px solid var(--ink);padding-top:12px;font-f
   </div>
   <details class="code"><summary>▸ In the code</summary><div>
     <p><code>ae/index/ingest.py</code>: <span class="fn">ingest()</span> is these six stations in about 40 lines, the best map of the module. <span class="fn">_describe_figures</span> is station 4.</p>
-    <p><code>make ingest</code> runs <code>uv run ae ingest --backend hybrid --embed ibm-granite/granite-embedding-english-r2 --vlm</code>. <code>make ingest-nodense</code> skips stations 4 and 6, so no model downloads are needed. <code>make ingest-all</code> builds one index per backend (thin, docling, hybrid) so the evaluation can compare them.</p>
+    <p><code>make ingest</code> runs <code>uv run ae ingest --backend hybrid --embed ibm-granite/granite-embedding-english-r2 --vlm</code>. <code>make ingest-nodense</code> skips stations 4 and 6, so no model downloads are needed. <code>make ingest-all</code> builds one index per backend (native, docling, hybrid) so the evaluation can compare them.</p>
   </div></details>
 </section>
 
@@ -498,7 +498,7 @@ footer{margin-top:64px;border-top:1.5px solid var(--ink);padding-top:12px;font-f
 
 <section id="file">
   <div class="head"><span class="no">B8</span><h2>What's inside the index file</h2></div>
-  <p class="prose">Everything lives in one SQLite file per backend (<code>data/index/thin.sqlite</code>, <code>docling.sqlite</code>, <code>hybrid.sqlite</code>). You can open one with <code>sqlite3 data/index/hybrid.sqlite</code> and look around.</p>
+  <p class="prose">Everything lives in one SQLite file per backend (<code>data/index/native.sqlite</code>, <code>docling.sqlite</code>, <code>hybrid.sqlite</code>). You can open one with <code>sqlite3 data/index/hybrid.sqlite</code> and look around.</p>
   <div class="card scroll-x" style="padding:4px 10px">
     <table class="t">
       <tr><th>table</th><th>what's in it</th><th>written by</th></tr>

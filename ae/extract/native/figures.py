@@ -1,4 +1,4 @@
-"""Figure extraction and caption linking (thin backend).
+"""Figure extraction and caption linking (native backend).
 
 How PyMuPDF locates images
 --------------------------
@@ -13,7 +13,8 @@ Caption linking (ours)
 ----------------------
 Candidate captions are text blocks whose text matches "FIG. N" / "Figure N".
 A figure takes the closest candidate that overlaps it horizontally, preferring
-one directly below, within MAX_CAPTION_GAP points. Captions that sit on the next
+one directly below, within MAX_CAPTION_GAP points. Figure ids are normalised by
+`ae.extract.captions.figure_id`, shared with the other backends. Captions that sit on the next
 page (figure pushed to the bottom of page N, caption at the top of N+1) are
 resolved by the orchestrator after all pages are parsed.
 
@@ -23,6 +24,7 @@ Reference numerals ("160", "112") live inside the image pixels. We run Tesseract
 in sparse-text mode (psm 11) over the crop and keep confident tokens so that a
 figure block is findable by the numerals it contains.
 """
+
 from __future__ import annotations
 
 import re
@@ -32,22 +34,35 @@ import pymupdf
 import pytesseract
 from PIL import Image
 
-from ae.extract.thin.text import FIG_TITLE_RE
+from ae.extract.captions import FIG_TITLE_RE, figure_id
+from ae.extract.native.ocr import ensure_tesseract
+from ae.log import get_logger
 from ae.schema import BBox, FigureBlock, TableBlock, TextBlock
 
-MIN_FIGURE_PTS = 60.0  # ignore images/clusters smaller than this on a side (icons, rules)
-MAX_CAPTION_GAP = 90.0  # points between figure edge and caption block
-FIG_ID_RE = re.compile(r"^\s*(FIG(?:URE)?\.?|Figure)\s*(\d+[A-Za-z]?)", re.I)
+log = get_logger(__name__)
+
+FIG_DIR = Path("data/extracted/native/figures")
+"""Where the native backend (PDF and DOCX) writes figure crops."""
+MIN_FIGURE_PTS = 60.0
+"""Images/drawing clusters smaller than this on a side are icons or rules, not figures."""
+MAX_CAPTION_GAP = 90.0
+"""Points between a figure edge and its caption block."""
+CAPTION_OVERLAP_TOLERANCE = 2.0
+"""Points a caption may overlap the figure box and still count as below/above it."""
+CAPTION_ABOVE_PENALTY = 30.0
+"""Added to the gap of a caption above the figure, so a caption below wins at similar distance."""
+FIG_TITLE_MAX_GAP = 30.0
+"""A bare "FIG. 2" title this close above a drawing belongs to it."""
 CROP_DPI = 200
+"""Render resolution of figure crops: enough for label OCR and the VLM, small on disk."""
+LABEL_MIN_CONFIDENCE = 50.0
+"""Tesseract word confidence (0-100) below which a figure-label token is dropped."""
+LABEL_TESSERACT_CONFIG = "--psm 11"
+"""Sparse-text segmentation: labels are scattered single words, not paragraphs."""
 
 
-def find_figure_boxes(page: pymupdf.Page, tables: list[TableBlock], columns: list[tuple[float, float]]) -> list[BBox]:
-    """Raster image boxes + vector-drawing clusters, minus anything that is really a table.
-
-    `columns` are the page's text column x-ranges (from text.detect_columns); an
-    image that is placed wider than its column (transparent margins) is clipped to
-    the column so the crop does not pick up neighbouring text.
-    """
+def find_figure_boxes(page: pymupdf.Page, tables: list[TableBlock]) -> list[BBox]:
+    """Raster image boxes + vector-drawing clusters, minus anything that is really a table."""
     boxes: list[BBox] = []
     for info in page.get_image_info():
         x0, y0, x1, y1 = info["bbox"]
@@ -70,90 +85,97 @@ def find_figure_boxes(page: pymupdf.Page, tables: list[TableBlock], columns: lis
     return boxes
 
 
-def _clip_to_column(b: BBox, columns: list[tuple[float, float]]) -> BBox:
-    if len(columns) < 2:
-        return b
-    # Column the image centre falls in; only clip if the image mostly lives in one column.
-    col = min(columns, key=lambda c: abs((c[0] + c[1]) / 2 - b.cx))
-    if b.width > 0.8 * (columns[-1][1] - columns[0][0]):
-        return b
-    return BBox(x0=max(b.x0, col[0] - 6), y0=b.y0, x1=min(b.x1, col[1] + 6), y1=b.y1)
-
-
 def crop_figure(page: pymupdf.Page, bbox: BBox, out_path: Path) -> None:
+    """Render the figure region of `page` to a PNG at CROP_DPI (parent dirs are created)."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
     clip = pymupdf.Rect(bbox.x0, bbox.y0, bbox.x1, bbox.y1)
     page.get_pixmap(clip=clip, dpi=CROP_DPI).save(str(out_path))
 
 
-def ocr_labels(image_path: Path, min_conf: float = 50.0) -> list[str]:
+def ocr_labels(image_path: Path, min_confidence: float = LABEL_MIN_CONFIDENCE) -> list[str]:
+    """Return the confident alphanumeric tokens Tesseract reads in a figure image, in reading order.
+
+    Raises RuntimeError when the Tesseract binary is not installed.
+    """
+    ensure_tesseract()
     img = Image.open(image_path)
-    data = pytesseract.image_to_data(img, config="--psm 11", output_type=pytesseract.Output.DICT)
+    data = pytesseract.image_to_data(img, config=LABEL_TESSERACT_CONFIG, output_type=pytesseract.Output.DICT)
     labels = []
-    for txt, conf in zip(data["text"], data["conf"]):
+    for txt, conf in zip(data["text"], data["conf"], strict=False):
         try:
             c = float(conf)
         except ValueError:
-            continue
+            continue  # unparseable confidence: the token cannot be trusted, skip it
         t = txt.strip()
-        if t and c >= min_conf and re.search(r"[A-Za-z0-9]", t):
+        if t and c >= min_confidence and re.search(r"[A-Za-z0-9]", t):
             labels.append(t)
     return labels
 
 
 def link_caption(bbox: BBox, text_blocks: list[TextBlock]) -> TextBlock | None:
+    """Return the caption block for a figure box, or None.
+
+    Candidates are caption-role blocks overlapping the figure horizontally within
+    MAX_CAPTION_GAP; the nearest wins, with captions above penalised by CAPTION_ABOVE_PENALTY.
+    """
     best, best_score = None, float("inf")
-    for tb in text_blocks:
-        if tb.role != "caption":
+    for block in text_blocks:
+        if block.role != "caption":
             continue
-        h_overlap = min(bbox.x1, tb.bbox.x1) - max(bbox.x0, tb.bbox.x0)
+        h_overlap = min(bbox.x1, block.bbox.x1) - max(bbox.x0, block.bbox.x0)
         if h_overlap <= 0:
             continue
-        below = tb.bbox.y0 - bbox.y1
-        above = bbox.y0 - tb.bbox.y1
-        gap = below if below >= -2 else above
-        if gap < -2 or gap > MAX_CAPTION_GAP:
+        below = block.bbox.y0 - bbox.y1
+        above = bbox.y0 - block.bbox.y1
+        is_below = below >= -CAPTION_OVERLAP_TOLERANCE
+        gap = below if is_below else above
+        if gap < -CAPTION_OVERLAP_TOLERANCE or gap > MAX_CAPTION_GAP:
             continue
-        score = gap + (0 if below >= -2 else 30)  # prefer captions below
+        score = gap + (0 if is_below else CAPTION_ABOVE_PENALTY)
         if score < best_score:
-            best, best_score = tb, score
+            best, best_score = block, score
     return best
 
 
-def figure_id(caption: str | None) -> str | None:
-    if not caption:
-        return None
-    m = FIG_ID_RE.match(caption)
-    if not m:
-        return None
-    word = "FIG." if m.group(1).upper().startswith("FIG.") or m.group(1).upper() == "FIG" else "Figure"
-    return f"{word} {m.group(2).upper()}"
+def _titles_above(bbox: BBox, text_blocks: list[TextBlock]) -> list[TextBlock]:
+    """Bare "FIG. n" title blocks sitting just above the figure and centred over it."""
+    return [
+        block
+        for block in text_blocks
+        if FIG_TITLE_RE.match(block.text)
+        and 0 <= bbox.y0 - block.bbox.y1 < FIG_TITLE_MAX_GAP
+        and block.bbox.cx > bbox.x0
+        and block.bbox.cx < bbox.x1
+    ]
 
 
 def extract_figures(
     page: pymupdf.Page,
     text_blocks: list[TextBlock],
     tables: list[TableBlock],
-    columns: list[tuple[float, float]],
     out_dir: Path,
     doc_stem: str,
     do_ocr_labels: bool = True,
 ) -> tuple[list[FigureBlock], set[int]]:
-    """Returns figures and the ids() of caption/title text blocks consumed by them."""
+    """Crop, caption and label every figure on a born-digital page.
+
+    Returns the figures and the `id()`s of the caption/title text blocks they consumed, so
+    the caller can drop those from the page's prose. Crops go to
+    `out_dir/<doc_stem>_p<page>_fig<i>.png`.
+    """
     figs: list[FigureBlock] = []
     used: set[int] = set()
-    for i, bbox in enumerate(find_figure_boxes(page, tables, columns)):
+    for i, bbox in enumerate(find_figure_boxes(page, tables)):
         path = out_dir / f"{doc_stem}_p{page.number + 1}_fig{i + 1}.png"
         crop_figure(page, bbox, path)
         cap = link_caption(bbox, text_blocks)
         if cap is not None:
             used.add(id(cap))
         # A bare "FIG. 2" title directly above the drawing belongs to the figure, not the prose.
-        for tb in text_blocks:
-            if FIG_TITLE_RE.match(tb.text) and 0 <= bbox.y0 - tb.bbox.y1 < 30 and tb.bbox.cx > bbox.x0 and tb.bbox.cx < bbox.x1:
-                used.add(id(tb))
-                if cap is None:
-                    cap = tb
+        titles = _titles_above(bbox, text_blocks)
+        used.update(id(t) for t in titles)
+        if cap is None and titles:
+            cap = titles[0]
         figs.append(
             FigureBlock(
                 bbox=bbox,
@@ -163,4 +185,5 @@ def extract_figures(
                 ocr_labels=ocr_labels(path) if do_ocr_labels else [],
             )
         )
+    log.debug(f"page {page.number + 1}: {len(figs)} figures")
     return figs, used

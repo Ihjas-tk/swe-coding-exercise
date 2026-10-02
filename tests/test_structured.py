@@ -1,4 +1,5 @@
 """Structured loader must answer the dev set's structured questions exactly."""
+
 from pathlib import Path
 
 import pytest
@@ -33,7 +34,9 @@ def test_q19_highest_unit_cost(db):
 
 
 def test_q20_extended_cost(db):
-    rows = q(db, "SELECT quantity, unit_cost_usd, extended_cost_usd FROM bill_of_materials WHERE part_number = 'FVT-ESC-40A'")
+    rows = q(
+        db, "SELECT quantity, unit_cost_usd, extended_cost_usd FROM bill_of_materials WHERE part_number = 'FVT-ESC-40A'"
+    )
     assert rows == [[8, 22.5, 180.0]]
 
 

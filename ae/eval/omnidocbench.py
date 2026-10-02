@@ -13,19 +13,33 @@ our own implementations (the official toolkit expects its own output format):
 - figures: a GT figure counts as detected when an extracted figure bbox overlaps it with
   IoU >= 0.5 (GT polygons are in image pixels; our bboxes in points, scaled by page width).
 """
+
 from __future__ import annotations
 
 import json
 import re
+from itertools import pairwise
 from pathlib import Path
 
 from rapidfuzz.distance import Levenshtein
 
 from ae.eval.extraction import _norm
-from ae.schema import ParsedDocument, TableBlock
+from ae.schema import BBox, ParsedDocument, TableBlock
 
 ROOT = Path("data/external/omnidocbench")
-TEXT_CATS = {"text_block", "title", "figure_caption", "table_caption", "list_group", "page_footnote", "table_footnote", "figure_footnote", "equation_caption", "reference", "code_txt"}
+TEXT_CATS = {
+    "text_block",
+    "title",
+    "figure_caption",
+    "table_caption",
+    "list_group",
+    "page_footnote",
+    "table_footnote",
+    "figure_footnote",
+    "equation_caption",
+    "reference",
+    "code_txt",
+}
 
 
 def _gt_pages() -> list[dict]:
@@ -71,7 +85,8 @@ def teds(html_a: str, html_b: str) -> float:
         return root
 
     class Cfg(Config):
-        def rename(self, n1, n2):
+        def rename(self, n1: Tree, n2: Tree) -> float:
+            """Relabel cost: free for equal labels, full for structure tags, else text edit distance."""
             if n1.name == n2.name:
                 return 0.0
             if n1.name in ("table", "tr") or n2.name in ("table", "tr"):
@@ -79,19 +94,16 @@ def teds(html_a: str, html_b: str) -> float:
             return 1.0 - Levenshtein.normalized_similarity(n1.name, n2.name)
 
     a, b = parse(html_a), parse(html_b)
-    size = lambda t: 1 + sum(size(c) for c in t.children)
+
+    def size(t: Tree) -> int:
+        return 1 + sum(size(c) for c in t.children)
+
     d = APTED(a, b, Cfg()).compute_edit_distance()
     return max(0.0, 1.0 - d / max(size(a), size(b)))
 
 
-def _iou(a, b) -> float:
-    x0, y0, x1, y1 = max(a[0], b[0]), max(a[1], b[1]), min(a[2], b[2]), min(a[3], b[3])
-    inter = max(0, x1 - x0) * max(0, y1 - y0)
-    ua = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
-    return inter / ua if ua > 0 else 0.0
-
-
 def evaluate(backend: str) -> dict:
+    """Score one backend's OmniDocBench extractions (text, reading order, TEDS, figure recall)."""
     gts = _gt_pages()
     ex_dir = ROOT / "extracted" / backend
     text_scores, order_scores, teds_scores, fig_hits, fig_total, n = [], [], [], 0, 0, 0
@@ -108,7 +120,7 @@ def evaluate(backend: str) -> dict:
             text_scores.append(Levenshtein.normalized_similarity(gt_text.lower(), ours.lower()))
             pos = [ours.lower().find(b.lower()[:30]) for b in gt_blocks if len(b) >= 12]
             pos = [p for p in pos if p >= 0]
-            pairs = list(zip(pos, pos[1:]))
+            pairs = list(pairwise(pos))
             if pairs:
                 order_scores.append(sum(1 for a, b in pairs if b > a) / len(pairs))
         # scale: GT polygons are in image pixels; our page width is 612 pt
@@ -121,13 +133,20 @@ def evaluate(backend: str) -> dict:
             if d["category_type"] == "figure" and not d.get("ignore"):
                 fig_total += 1
                 xs, ys = d["poly"][0::2], d["poly"][1::2]
-                gbox = (min(xs) * scale, min(ys) * scale, max(xs) * scale, max(ys) * scale)
-                if any(_iou(gbox, (b.bbox.x0, b.bbox.y0, b.bbox.x1, b.bbox.y1)) >= 0.5 for b in doc.pages[0].blocks if b.kind == "figure"):
+                gbox = BBox(x0=min(xs) * scale, y0=min(ys) * scale, x1=max(xs) * scale, y1=max(ys) * scale)
+                if any(gbox.iou(b.bbox) >= 0.5 for b in doc.pages[0].blocks if b.kind == "figure"):
                     fig_hits += 1
-    avg = lambda xs: round(sum(xs) / len(xs), 3) if xs else None
+
+    def avg(xs: list[float]) -> float | None:
+        return round(sum(xs) / len(xs), 3) if xs else None
+
     return {
-        "backend": backend, "pages": n,
-        "text_similarity": avg(text_scores), "reading_order_pair_acc": avg(order_scores),
-        "table_teds": avg(teds_scores), "tables": len(teds_scores),
-        "figure_detection": f"{fig_hits}/{fig_total}", "figure_recall": round(fig_hits / fig_total, 3) if fig_total else None,
+        "backend": backend,
+        "pages": n,
+        "text_similarity": avg(text_scores),
+        "reading_order_pair_acc": avg(order_scores),
+        "table_teds": avg(teds_scores),
+        "tables": len(teds_scores),
+        "figure_detection": f"{fig_hits}/{fig_total}",
+        "figure_recall": round(fig_hits / fig_total, 3) if fig_total else None,
     }

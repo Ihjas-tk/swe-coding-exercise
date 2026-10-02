@@ -13,16 +13,18 @@ Metrics (all per backend):
   text; the score is the fraction of consecutive anchor pairs that appear in the right order
   (1.0 = perfect), plus the count of anchors not found at all.
 """
+
 from __future__ import annotations
 
 import json
 import re
+from itertools import pairwise
 from pathlib import Path
 
 from rapidfuzz import fuzz
 
 from ae.index.numerals import NumeralIndex, reconcile_labels
-from ae.schema import ParsedDocument
+from ae.schema import FigureBlock, ParsedDocument
 
 GOLD = Path("gold")
 
@@ -33,8 +35,8 @@ def _norm(s: str) -> str:
 
 
 def _load_docs(backend: str) -> dict[str, ParsedDocument]:
-    """Parsed documents for the corpus via the backend's page cache (built by `make ingest`)."""
-    from ae.cli import corpus_files
+    """Parse the corpus through the backend's page cache (built by `make ingest`)."""
+    from ae.corpus import corpus_files
     from ae.extract.base import parse
 
     out = {}
@@ -59,21 +61,30 @@ def _page_text(doc: ParsedDocument, page: int) -> str:
 
 
 def eval_ocr(docs: dict[str, ParsedDocument]) -> dict:
+    """CER/WER of each gold OCR page."""
     import jiwer
 
     out = {}
     for f in (GOLD / "ocr").glob("*.txt"):
         m = re.match(r"(.+)_p(\d+)$", f.stem)
+        if m is None:
+            raise ValueError(f"gold OCR file must be named <doc>_p<page>.txt: {f.name}")
         doc_stem, page = m.group(1), int(m.group(2))
         doc = next((d for name, d in docs.items() if name.startswith(doc_stem)), None)
         if not doc:
             continue
         hyp, ref = _norm(_page_text(doc, page)), _norm(f.read_text())
-        out[f.stem] = {"cer": round(jiwer.cer(ref, hyp), 4), "wer": round(jiwer.wer(ref, hyp), 4), "ref_chars": len(ref), "hyp_chars": len(hyp)}
+        out[f.stem] = {
+            "cer": round(jiwer.cer(ref, hyp), 4),
+            "wer": round(jiwer.wer(ref, hyp), 4),
+            "ref_chars": len(ref),
+            "hyp_chars": len(hyp),
+        }
     return out
 
 
 def eval_tables(docs: dict[str, ParsedDocument]) -> dict:
+    """Cell accuracy of each gold table."""
     gold = json.loads((GOLD / "tables.json").read_text())
     results = []
     for g in gold:
@@ -84,7 +95,8 @@ def eval_tables(docs: dict[str, ParsedDocument]) -> dict:
             for p in doc.pages:
                 if p.number in g["pages"]:
                     for b in p.blocks:
-                        if b.kind == "table" and b.rows and (not g.get("title") or (b.title and fuzz.partial_ratio(b.title.lower(), g["title"].lower()) >= 80) or True):
+                        # every table on the gold pages counts; rows are matched below
+                        if b.kind == "table" and b.rows:
                             pieces.append(b)
             # merge pieces of a split table (header repeated)
             for i, b in enumerate(pieces):
@@ -95,58 +107,66 @@ def eval_tables(docs: dict[str, ParsedDocument]) -> dict:
         correct = 0
         matched_rows = 0
         for gr in gold_rows:
-            best = max(found_rows, key=lambda fr: fuzz.ratio(_norm(fr[0]).lower(), _norm(gr[0]).lower()) if fr else 0, default=None)
+            best = max(
+                found_rows,
+                key=lambda fr: fuzz.ratio(_norm(fr[0]).lower(), _norm(gr[0]).lower()) if fr else 0,
+                default=None,
+            )
             if best is None or fuzz.ratio(_norm(best[0]).lower(), _norm(gr[0]).lower()) < 85:
                 continue
             matched_rows += 1
             for i, gc in enumerate(gr):
                 if i < len(best) and _norm(best[i]) == _norm(gc):
                     correct += 1
-        results.append({"doc": g["doc"], "title": g["title"], "found": bool(found_rows), "rows_matched": f"{matched_rows}/{len(gold_rows)}", "cell_acc": round(correct / total, 3), "cells": f"{correct}/{total}"})
+        results.append(
+            {
+                "doc": g["doc"],
+                "title": g["title"],
+                "found": bool(found_rows),
+                "rows_matched": f"{matched_rows}/{len(gold_rows)}",
+                "cell_acc": round(correct / total, 3),
+                "cells": f"{correct}/{total}",
+            }
+        )
     agg_c = sum(int(r["cells"].split("/")[0]) for r in results)
     agg_t = sum(int(r["cells"].split("/")[1]) for r in results)
-    return {"tables": results, "cell_acc": round(agg_c / agg_t, 3), "tables_found": f"{sum(r['found'] for r in results)}/{len(results)}"}
+    return {
+        "tables": results,
+        "cell_acc": round(agg_c / agg_t, 3),
+        "tables_found": f"{sum(r['found'] for r in results)}/{len(results)}",
+    }
 
 
 def eval_figures(docs: dict[str, ParsedDocument], db_path: Path | None = None) -> dict:
+    """Figure found / caption linked / label recall for each gold figure."""
     gold = json.loads((GOLD / "figures.json").read_text())
     numerals = NumeralIndex()
     for d in docs.values():
         numerals.add_document(d)
-    vlm_parts: dict[tuple[str, int], set[str]] = {}
-    if db_path and db_path.exists():
-        import sqlite3
-
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-        try:
-            for doc, page, js in conn.execute("SELECT doc, page, json FROM figure_descriptions"):
-                d = json.loads(js)
-                vlm_parts.setdefault((doc, page), set()).update(str(x.get("label")) for x in d.get("labelled_parts", []) if x.get("label"))
-        except sqlite3.OperationalError:
-            pass
-        conn.close()
+    vlm_parts = _vlm_labels(db_path)
     rows = []
     for g in gold:
-        doc = docs.get(g["doc"])
-        fig = None
-        if doc and len(doc.pages) >= g["page"]:
-            figs_on_page = [b for b in doc.pages[g["page"] - 1].blocks if b.kind == "figure"]
-            want = _norm(g.get("caption") or g.get("caption_prefix")).lower()[:40]
-            # "found" = a figure block exists on the gold page; prefer the one whose caption matches
-            fig = next((b for b in figs_on_page if _norm(b.caption or "").lower().startswith(want) or (b.figure_id and b.figure_id == g["figure_id"])), None)
-            if fig is None and figs_on_page:
-                fig = figs_on_page[0]
-        found = fig is not None
-        cap_ok = bool(found and fig.caption and _norm(fig.caption).lower().startswith(_norm(g.get("caption") or g.get("caption_prefix")).lower()[:40]))
+        fig = _match_figure(docs.get(g["doc"]), g)
+        cap_ok = bool(fig is not None and fig.caption and _norm(fig.caption).lower().startswith(_gold_caption(g)))
         label_recall_ocr = label_recall_vlm = None
-        if found and g["labels"]:
+        if fig is not None and g["labels"]:
             rec = reconcile_labels(fig.ocr_labels, numerals.defined(g["doc"]))
             have = set(rec["matched"] + rec["repaired"])
             label_recall_ocr = round(len(have & set(g["labels"])) / len(g["labels"]), 2)
             vp = vlm_parts.get((g["doc"], g["page"]))
             if vp is not None:
                 label_recall_vlm = round(len(vp & set(g["labels"])) / len(g["labels"]), 2)
-        rows.append({"doc": g["doc"], "page": g["page"], "figure_id": g["figure_id"], "found": found, "caption_linked": cap_ok, "label_recall_ocr": label_recall_ocr, "label_recall_vlm": label_recall_vlm})
+        rows.append(
+            {
+                "doc": g["doc"],
+                "page": g["page"],
+                "figure_id": g["figure_id"],
+                "found": fig is not None,
+                "caption_linked": cap_ok,
+                "label_recall_ocr": label_recall_ocr,
+                "label_recall_vlm": label_recall_vlm,
+            }
+        )
     n = len(rows)
     lab = [r["label_recall_ocr"] for r in rows if r["label_recall_ocr"] is not None]
     labv = [r["label_recall_vlm"] for r in rows if r["label_recall_vlm"] is not None]
@@ -159,7 +179,50 @@ def eval_figures(docs: dict[str, ParsedDocument], db_path: Path | None = None) -
     }
 
 
+def _vlm_labels(db_path: Path | None) -> dict[tuple[str, int], set[str]]:
+    """(doc, page) -> part labels the VLM figure descriptions list (empty without an index or descriptions)."""
+    vlm_parts: dict[tuple[str, int], set[str]] = {}
+    if not (db_path and db_path.exists()):
+        return vlm_parts
+    import sqlite3
+
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    try:
+        for doc, page, js in conn.execute("SELECT doc, page, json FROM figure_descriptions"):
+            d = json.loads(js)
+            vlm_parts.setdefault((doc, page), set()).update(
+                str(x.get("label")) for x in d.get("labelled_parts", []) if x.get("label")
+            )
+    except sqlite3.OperationalError:
+        pass
+    conn.close()
+    return vlm_parts
+
+
+def _gold_caption(g: dict) -> str:
+    """Normalised first 40 characters of the gold caption (or caption prefix): the match key."""
+    return _norm(g.get("caption") or g["caption_prefix"]).lower()[:40]
+
+
+def _match_figure(doc: ParsedDocument | None, g: dict) -> FigureBlock | None:
+    """Find the extracted figure for a gold one: any figure on the gold page, preferring a caption/id match."""
+    if not doc or len(doc.pages) < g["page"]:
+        return None
+    figs_on_page = [b for b in doc.pages[g["page"] - 1].blocks if isinstance(b, FigureBlock)]
+    want = _gold_caption(g)
+    fig = next(
+        (
+            b
+            for b in figs_on_page
+            if _norm(b.caption or "").lower().startswith(want) or (b.figure_id and b.figure_id == g["figure_id"])
+        ),
+        None,
+    )
+    return fig if fig is not None else (figs_on_page[0] if figs_on_page else None)
+
+
 def eval_reading_order(docs: dict[str, ParsedDocument]) -> dict:
+    """Pair-order accuracy of gold anchors on each gold page."""
     gold = json.loads((GOLD / "reading_order.json").read_text())
     out = {}
     for doc_name, g in gold.items():
@@ -173,7 +236,8 @@ def eval_reading_order(docs: dict[str, ParsedDocument]) -> dict:
             i = text.find(_norm(a).lower())
             if i < 0:
                 # tolerate OCR noise: fuzzy locate the anchor
-                best, best_i = 0, -1
+                best: float = 0
+                best_i = -1
                 a_n = _norm(a).lower()
                 for j in range(0, max(1, len(text) - len(a_n)), 4):
                     sc = fuzz.ratio(text[j : j + len(a_n)], a_n)
@@ -184,13 +248,19 @@ def eval_reading_order(docs: dict[str, ParsedDocument]) -> dict:
                 missing += 1
             else:
                 pos.append(i)
-        pairs = list(zip(pos, pos[1:]))
+        pairs = list(pairwise(pos))
         ordered = sum(1 for a, b in pairs if b > a)
-        out[doc_name] = {"page": g["page"], "anchors": len(g["anchors"]), "missing": missing, "pair_order_acc": round(ordered / len(pairs), 3) if pairs else None}
+        out[doc_name] = {
+            "page": g["page"],
+            "anchors": len(g["anchors"]),
+            "missing": missing,
+            "pair_order_acc": round(ordered / len(pairs), 3) if pairs else None,
+        }
     return out
 
 
 def evaluate(backend: str) -> dict:
+    """Run every extraction metric for one backend."""
     docs = _load_docs(backend)
     from ae.index.store import index_db
 
