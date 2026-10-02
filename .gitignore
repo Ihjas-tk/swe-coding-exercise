@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# answer-engine
+.venv/
+data/cache/
+data/extracted/
+data/index/
+.env
+
+# local review plots (not part of the submission)
+plots/
+data/
