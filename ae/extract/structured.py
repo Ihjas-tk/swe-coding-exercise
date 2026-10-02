@@ -27,7 +27,12 @@ from typing import Any
 
 import openpyxl
 
+from ae.log import get_logger, timed
+
+log = get_logger(__name__)
+
 DB_PATH = Path("data/index/answer_engine.sqlite")
+MAX_ROW_TEXT_COLS = 30
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SQL_TYPES = {"int": "INTEGER", "float": "REAL", "date": "TEXT", "text": "TEXT"}
 
@@ -85,36 +90,51 @@ def _ident(s: str) -> str:
 
 
 def _header_index(rows: list[list[Any]]) -> int:
-    """First row whose cells are all non-empty strings is the header (skips title rows)."""
-    for i, r in enumerate(rows[:10]):
-        if r and all(isinstance(v, str) and v.strip() for v in r):
-            return i
-    return 0
+    """Header = the row among the first 15 with the most non-empty *string* cells (at least
+    half of the sheet's width). Title rows above the header are short (one merged cell) and
+    data rows are mostly numeric, so this picks real headers even when a column has no
+    header at all (OLSK BOM: cost column unnamed, header on row 6)."""
+    best, best_n = 0, -1
+    for i, r in enumerate(rows[:15]):
+        n = sum(1 for v in r if isinstance(v, str) and v.strip() and not re.fullmatch(r"[\d.,%€$£-]+", v.strip()))
+        if n > best_n and n >= 2:
+            best, best_n = i, n
+    return best if best_n >= 2 else 0
 
 
 def _coerce(v: Any, typ: str) -> Any:
     if v is None or (isinstance(v, str) and v.strip() == ""):
         return None
-    if typ == "int":
-        return int(float(v))
-    if typ == "float":
-        return float(v)
+    if typ in ("int", "float"):
+        if not _is_num(v):
+            return None  # minority non-numeric cell in a numeric column
+        f = float(str(v).replace(",", ""))
+        return int(f) if typ == "int" else f
     if typ == "date":
         return v.date().isoformat() if isinstance(v, datetime) else (v.isoformat() if isinstance(v, date) else str(v))
     return str(v).strip()
 
 
+def _is_num(v: Any) -> bool:
+    try:
+        float(str(v).replace(",", ""))
+        return True
+    except ValueError:
+        return False
+
+
 def _infer_type(values: list[Any]) -> str:
+    """int / float / date / text. A column that is >= 90 % numeric is numeric; its few text
+    cells (e.g. "16H" in a cost column) become NULL so aggregates still work."""
     vals = [v for v in values if v is not None and not (isinstance(v, str) and v.strip() == "")]
     if not vals:
         return "text"
     if all(isinstance(v, (date, datetime)) or (isinstance(v, str) and DATE_RE.match(v.strip())) for v in vals):
         return "date"
-    try:
-        nums = [float(v) for v in vals]
-    except (TypeError, ValueError):
+    numeric = [v for v in vals if _is_num(v)]
+    if len(numeric) < 0.9 * len(vals) or not numeric:
         return "text"
-    if all(isinstance(v, int) or float(v).is_integer() for v in vals) and all(not isinstance(v, str) or "." not in v for v in vals):
+    if all(isinstance(v, int) or float(str(v).replace(",", "")).is_integer() for v in numeric) and all(not isinstance(v, str) or "." not in v for v in numeric):
         return "int"
     return "float"
 
@@ -129,10 +149,13 @@ def load_structured(paths: list[Path], db_path: Path = DB_PATH) -> list[Structur
     conn.execute("CREATE TABLE IF NOT EXISTS _structured_rows (doc TEXT, tbl TEXT, row INTEGER, text TEXT, PRIMARY KEY (doc, tbl, row))")
     loaded: list[StructuredTable] = []
     for path in paths:
-        sheets = _read_csv(path) if path.suffix.lower() == ".csv" else _read_xlsx(path)
-        for name, rows in sheets:
-            tbl = _load_table(conn, _ident(name), path.name, rows)
-            loaded.append(tbl)
+        with timed("structured", path.name) as t:
+            sheets = _read_csv(path) if path.suffix.lower() == ".csv" else _read_xlsx(path)
+            for name, rows in sheets:
+                tbl = _load_table(conn, _ident(name), path.name, rows)
+                loaded.append(tbl)
+                log.info(f"{path.name} -> table {tbl.name}: {tbl.n_rows} rows, {len(tbl.columns)} columns")
+            t["tables"] = len(sheets)
     conn.commit()
     conn.close()
     return loaded
@@ -140,7 +163,7 @@ def load_structured(paths: list[Path], db_path: Path = DB_PATH) -> list[Structur
 
 def _load_table(conn: sqlite3.Connection, name: str, doc: str, rows: list[list[Any]]) -> StructuredTable:
     h = _header_index(rows)
-    header = [_ident(c) for c in rows[h]]
+    header = [_ident(c) if (c is not None and str(c).strip()) else f"col_{i + 1}" for i, c in enumerate(rows[h])]
     # de-duplicate column names
     seen: dict[str, int] = {}
     for i, c in enumerate(header):
@@ -166,7 +189,10 @@ def _load_table(conn: sqlite3.Connection, name: str, doc: str, rows: list[list[A
     for ri, r in enumerate(body, start=1):
         typed = [_coerce(r[i], cols[i].type) for i in range(len(cols))]
         conn.execute(f'INSERT INTO "{name}" VALUES ({placeholders})', [ri] + typed)
-        text = f"{name} row {ri}: " + "; ".join(f"{cols[i].name}={typed[i]}" for i in range(len(cols)) if typed[i] not in (None, ""))
+        # Row text for search: wide tables (hundreds of sensor columns) are capped so a row stays a
+        # readable chunk; aggregates over the dropped columns still work through SQL.
+        shown = [i for i in range(len(cols)) if typed[i] not in (None, "")][:MAX_ROW_TEXT_COLS]
+        text = f"{name} row {ri}: " + "; ".join(f"{cols[i].name}={typed[i]}" for i in shown) + (f"; … ({len(cols) - len(shown)} more columns)" if len(shown) < sum(1 for v in typed if v not in (None, "")) else "")
         conn.execute("INSERT INTO _structured_rows VALUES (?, ?, ?, ?)", (doc, name, ri, text))
     tbl = StructuredTable(name=name, doc=doc, columns=cols, n_rows=len(body))
     conn.execute(
@@ -211,7 +237,13 @@ def describe_schema(db_path: Path = DB_PATH) -> str:
     out = []
     for name, doc, n_rows, schema_json in conn.execute("SELECT name, doc, n_rows, schema_json FROM _structured_tables ORDER BY name"):
         out.append(f'TABLE "{name}"  -- source file: {doc}, {n_rows} rows; column _row = 1-based source row number')
-        for c in json.loads(schema_json):
+        cols = json.loads(schema_json)
+        # Wide tables (hundreds of sensor columns) are summarised: first 20 + last 8 columns.
+        shown = cols if len(cols) <= 30 else cols[:20] + [None] + cols[-8:]
+        for c in shown:
+            if c is None:
+                out.append(f"  ... {len(cols) - 28} more columns named like the ones above ({cols[20]['name']} .. {cols[-9]['name']}), all {SQL_TYPES[cols[20]['type']]}")
+                continue
             ex = ", ".join(c["samples"][:20])
             note = f"values: {ex}" if c["type"] == "text" and c["n_distinct"] <= 20 else f"e.g. {ex}"
             out.append(f'  "{c["name"]}" {SQL_TYPES[c["type"]]}  -- {c["n_distinct"]} distinct; {note}')

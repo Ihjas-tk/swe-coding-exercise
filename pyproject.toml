@@ -19,9 +19,14 @@ dependencies = [
     "rich>=13.0",
     "jiwer==4.0.0",
     "pyyaml>=6.0",
+    "rapidfuzz>=3.0",
+    "apted>=1.0",
 ]
 
 [dependency-groups]
+ablation = [
+    "easyocr>=1.7",
+]
 dev = ["pytest>=8.0"]
 
 [project.scripts]

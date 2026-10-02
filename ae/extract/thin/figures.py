@@ -53,7 +53,11 @@ def find_figure_boxes(page: pymupdf.Page, tables: list[TableBlock], columns: lis
         x0, y0, x1, y1 = info["bbox"]
         b = BBox(x0=x0, y0=y0, x1=x1, y1=y1)
         if b.width >= MIN_FIGURE_PTS and b.height >= MIN_FIGURE_PTS:
-            boxes.append(_clip_to_column(b, columns))
+            # Not clipped to the text column: on the gripper patent the drawing's right-hand
+            # labels ("160") sit a few points past the column edge, and clipping lost them.
+            # The price is an occasional sliver of neighbouring text in the label OCR, which
+            # the numeral reconciliation ignores.
+            boxes.append(b)
     # Vector figures: clusters of drawing paths. Table rulings cluster too, so anything
     # overlapping a detected table is discarded.
     for r in page.cluster_drawings():

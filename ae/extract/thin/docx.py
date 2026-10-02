@@ -29,7 +29,7 @@ from ae.extract.thin.figures import figure_id, ocr_labels
 from ae.extract.thin.text import CAPTION_RE
 from ae.schema import BBox, Block, FigureBlock, Page, ParsedDocument, TableBlock, TextBlock
 
-VERSION = "1"
+VERSION = "2"
 FIG_DIR = Path("data/extracted/thin/figures")
 
 
@@ -83,7 +83,10 @@ def parse_docx(path: Path, use_cache: bool = True, backend_name: str = "thin") -
             if not text:
                 continue
             style = (p.style.name or "").lower()
-            role = "heading" if style.startswith(("heading", "title")) else ("caption" if CAPTION_RE.match(text) else "body")
+            runs = [r for r in p.runs if r.text.strip()]
+            all_bold = bool(runs) and all(bool(r.bold) or (r.style is not None and "strong" in (r.style.name or "").lower()) for r in runs)
+            looks_heading = len(text) < 90 and (re.match(r"^\d+(\.\d+)*\.?\s+\S", text) or text.isupper()) and all_bold
+            role = "heading" if (style.startswith(("heading", "title")) or looks_heading) else ("caption" if CAPTION_RE.match(text) else "body")
             if role == "heading":
                 last_heading = text
             if role == "caption" and pending_figure is not None and pending_figure.caption is None:

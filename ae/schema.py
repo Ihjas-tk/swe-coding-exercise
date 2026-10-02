@@ -89,6 +89,7 @@ class FigureBlock(BaseModel):
     bbox: BBox
     image_path: str | None = None  # cropped PNG on disk, relative to project root
     caption: str | None = None  # e.g. "FIG. 2 — Perspective cross section of ..."
+    caption_page: int | None = None  # set when the caption sits on a different page than the figure
     figure_id: str | None = None  # normalised, e.g. "FIG. 2" / "Figure 1"
     ocr_labels: list[str] = Field(default_factory=list)  # tokens read off the image (e.g. "160", "control unit")
     description: str | None = None  # optional VLM description (filled in a later phase)

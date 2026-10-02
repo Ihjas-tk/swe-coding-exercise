@@ -1,0 +1,96 @@
+[
+ {
+  "doc": "US8485576B2_robotic_gripper.pdf",
+  "page": 1,
+  "figure_id": "FIG. 2",
+  "caption": "FIG. 2 — Perspective cross section of the gripper end-effector 100 in an unlocked configuration.",
+  "labels": [
+   "100",
+   "110",
+   "112",
+   "120",
+   "50"
+  ],
+  "note": "160 (control unit) is cut off by the embedded image's right edge; the dev-set question about 160 is answerable only from the text."
+ },
+ {
+  "doc": "US2988237A_programmed_article_transfer.pdf",
+  "page": 1,
+  "figure_id": "FIG. 2",
+  "caption": "FIG. 2 — Transfer-head rate control, program drum 62, and valve control circuit 45.",
+  "labels": [
+   "60",
+   "62",
+   "64",
+   "45",
+   "74",
+   "76",
+   "112"
+  ],
+  "scanned": true
+ },
+ {
+  "doc": "US20170320570A1_uav_vtol.pdf",
+  "page": 1,
+  "figure_id": "FIG. 3",
+  "caption": "FIG. 3 — Bottom, partial cutaway view of the UAV showing battery 38 and autopilot module 46 placement.",
+  "labels": [
+   "12",
+   "14",
+   "18",
+   "28",
+   "34",
+   "38"
+  ],
+  "note": "16, 20 and 46 are cut off by the image edge."
+ },
+ {
+  "doc": "US5481460A_ev_controller.pdf",
+  "page": 1,
+  "figure_id": "FIG. 1",
+  "caption_prefix": "FIG. 1 —",
+  "labels": [
+   "30",
+   "20",
+   "24",
+   "40"
+  ],
+  "note": "22 and 26 are cut off by the image edge."
+ },
+ {
+  "doc": "EV-BMS-100_design_document.pdf",
+  "page": 1,
+  "figure_id": "Figure 1",
+  "caption_prefix": "Figure 1 — BMS system block diagram",
+  "labels": []
+ },
+ {
+  "doc": "EV-BMS-100_design_document.pdf",
+  "page": 2,
+  "caption_page": 3,
+  "figure_id": "Figure 2",
+  "caption_prefix": "Figure 2 — BMS enclosure rendering showing the four M12 connector ports",
+  "labels": []
+ },
+ {
+  "doc": "Falcon-VT1_flight_controller_design_document.pdf",
+  "page": 1,
+  "figure_id": "Figure 1",
+  "caption_prefix": "Figure 1 — Falcon-VT1 block diagram",
+  "labels": []
+ },
+ {
+  "doc": "RJA-40_actuator_design_document.docx",
+  "page": 1,
+  "figure_id": "Figure 1",
+  "caption_prefix": "Figure 1 — RJA-40 drivetrain block diagram",
+  "labels": []
+ },
+ {
+  "doc": "RJA-40_actuator_design_document.docx",
+  "page": 2,
+  "figure_id": "Figure 2",
+  "caption_prefix": "Figure 2 — RJA-40 module, assembled view.",
+  "labels": []
+ }
+]

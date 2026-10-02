@@ -35,8 +35,11 @@ TRI_WEIGHT = 0.2
 STOP = {"the", "a", "an", "of", "in", "on", "for", "to", "is", "are", "what", "which", "how", "does", "do", "and", "or", "with", "by", "at", "it", "its", "this", "that", "be", "as", "from"}
 
 
-def index_db(backend: str) -> Path:
-    return INDEX_DIR / f"{backend}.sqlite"
+def index_db(backend: str, name: str | None = None) -> Path:
+    from ae import config
+
+    name = config.INDEX if name is None else name
+    return (INDEX_DIR / name if name else INDEX_DIR) / f"{backend}.sqlite"
 
 
 @dataclass

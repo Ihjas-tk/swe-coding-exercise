@@ -1,0 +1,722 @@
+[
+ {
+  "id": "x01",
+  "type": "factual",
+  "doc_group": "patent_gripper_real",
+  "question": "In US8,485,576 B2, how many constraining plates does the embodiment shown in FIGS. 2 and 3 have?",
+  "reference_answer": "Three constraining plates 110 (a single plate is said to be practicable in some variants).",
+  "evidence": [
+   {
+    "doc": "US8485576B2_robotic_gripper_real.pdf",
+    "page": 14
+   }
+  ],
+  "source": "verified from text"
+ },
+ {
+  "id": "x02",
+  "type": "figure",
+  "doc_group": "patent_gripper_real",
+  "question": "What is labelled 120c in FIG. 5C of US8,485,576 B2?",
+  "reference_answer": "A tube through which fluid-pressure suction is exerted (the suction pin of the third embodiment).",
+  "evidence": [
+   {
+    "doc": "US8485576B2_robotic_gripper_real.pdf",
+    "page": 14
+   },
+   {
+    "doc": "US8485576B2_robotic_gripper_real.pdf",
+    "page": 6
+   }
+  ],
+  "source": "verified from text; sheet page from OCR of drawing sheets"
+ },
+ {
+  "id": "x03",
+  "type": "figure",
+  "doc_group": "patent_gripper_real",
+  "question": "In US8,485,576 B2, what do reference numerals 1020 denote in FIG. 1?",
+  "reference_answer": "The metal pins of the prior-art PINPRESSIONS toy shown in FIG. 1.",
+  "evidence": [
+   {
+    "doc": "US8485576B2_robotic_gripper_real.pdf",
+    "page": 13
+   },
+   {
+    "doc": "US8485576B2_robotic_gripper_real.pdf",
+    "page": 2
+   }
+  ],
+  "source": "verified from text",
+  "trap": "numeral 1020 vs 120"
+ },
+ {
+  "id": "x04",
+  "type": "figure",
+  "doc_group": "patent_gripper_real",
+  "question": "Which figure of US8,485,576 B2 shows the control unit 160, and what does it control?",
+  "reference_answer": "FIG. 11; it controls the actuator of the plate translating/rotating devices 112 that lock the pins.",
+  "evidence": [
+   {
+    "doc": "US8485576B2_robotic_gripper_real.pdf",
+    "page": 14
+   },
+   {
+    "doc": "US8485576B2_robotic_gripper_real.pdf",
+    "page": 12
+   }
+  ],
+  "source": "verified from text"
+ },
+ {
+  "id": "x05",
+  "type": "factual",
+  "doc_group": "patent_gripper_real",
+  "question": "In US8,485,576 B2, what provides the magnetic field of the electromagnet pin 120a?",
+  "reference_answer": "A wire 125a wound around the electromagnet 120a.",
+  "evidence": [
+   {
+    "doc": "US8485576B2_robotic_gripper_real.pdf",
+    "page": 14
+   }
+  ],
+  "source": "verified from text"
+ },
+ {
+  "id": "x06",
+  "type": "unanswerable",
+  "doc_group": "patent_gripper_real",
+  "question": "What is the maximum payload or gripping force of the gripper in US8,485,576 B2?",
+  "reference_answer": "Not found — the patent gives no payload or force rating.",
+  "evidence": [],
+  "source": "absence verified by search"
+ },
+ {
+  "id": "x07",
+  "type": "factual",
+  "doc_group": "patent_battery",
+  "question": "In US9,577,240 B2, what is the metal bridge of the bus bar made of, and what is its melting point?",
+  "reference_answer": "A lead-free alloy with tin (Sn) and copper (Cu) as main components; melting point about 150 to 300 °C.",
+  "evidence": [
+   {
+    "doc": "US9577240B2_battery_module_busbar.pdf",
+    "page": 17
+   },
+   {
+    "doc": "US9577240B2_battery_module_busbar.pdf",
+    "page": 15
+   }
+  ],
+  "source": "verified from text"
+ },
+ {
+  "id": "x08",
+  "type": "figure",
+  "doc_group": "patent_battery",
+  "question": "What is labelled 240 in FIG. 10 of US9,577,240 B2?",
+  "reference_answer": "A rivet joining the metal plates and the metal bridge of the bus bar.",
+  "evidence": [
+   {
+    "doc": "US9577240B2_battery_module_busbar.pdf",
+    "page": 18
+   },
+   {
+    "doc": "US9577240B2_battery_module_busbar.pdf",
+    "page": 12
+   }
+  ],
+  "source": "verified from text; sheet page from OCR"
+ },
+ {
+  "id": "x09",
+  "type": "factual",
+  "doc_group": "patent_battery",
+  "question": "In the short-circuit test described in US9,577,240 B2 (FIG. 12), what happened to the module voltage and the cell temperature?",
+  "reference_answer": "The module voltage stayed at about 65 V for about 50 s, then dropped to 0 V; the cell temperature stayed at about 23 °C.",
+  "evidence": [
+   {
+    "doc": "US9577240B2_battery_module_busbar.pdf",
+    "page": 18
+   }
+  ],
+  "source": "verified from text"
+ },
+ {
+  "id": "x10",
+  "type": "factual",
+  "doc_group": "patent_battery",
+  "question": "How many unit cells are connected in series in the battery module tested in US9,577,240 B2, and what is the module voltage?",
+  "reference_answer": "15 cells in series; 64.5 V.",
+  "evidence": [
+   {
+    "doc": "US9577240B2_battery_module_busbar.pdf",
+    "page": 18
+   }
+  ],
+  "source": "verified from text"
+ },
+ {
+  "id": "x11",
+  "type": "unanswerable",
+  "doc_group": "patent_battery",
+  "question": "What is the capacity in Ah of each unit cell in US9,577,240 B2?",
+  "reference_answer": "Not found — only voltages are stated.",
+  "evidence": [],
+  "source": "absence verified by search"
+ },
+ {
+  "id": "x12",
+  "type": "table",
+  "doc_group": "datasheet_mcp73831",
+  "question": "What are the minimum, typical and maximum values of the UVLO start threshold (VSTART) of the MCP73831?",
+  "reference_answer": "3.3 V min, 3.45 V typ, 3.6 V max.",
+  "evidence": [
+   {
+    "doc": "MCP73831_datasheet.pdf",
+    "page": 3
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x13",
+  "type": "table",
+  "doc_group": "datasheet_mcp73831",
+  "question": "What is the typical pass-transistor ON-resistance of the MCP73831 and under what conditions?",
+  "reference_answer": "350 mΩ, at VDD = 3.75 V and TJ = 105 °C.",
+  "evidence": [
+   {
+    "doc": "MCP73831_datasheet.pdf",
+    "page": 4
+   }
+  ],
+  "source": "verified; table continued from p3"
+ },
+ {
+  "id": "x14",
+  "type": "figure",
+  "doc_group": "datasheet_mcp73831",
+  "question": "In the MCP73831 flowchart (Figure 4-1), which condition moves the device from Preconditioning to Fast Charge mode?",
+  "reference_answer": "VBAT > VPTH (the battery voltage rises above the preconditioning threshold).",
+  "evidence": [
+   {
+    "doc": "MCP73831_datasheet.pdf",
+    "page": 13
+   }
+  ],
+  "source": "verified from rendered page"
+ },
+ {
+  "id": "x15",
+  "type": "figure",
+  "doc_group": "datasheet_mcp73831",
+  "question": "In the MCP73831 application circuit of Figure 6-1, which TVS part is placed across the input?",
+  "reference_answer": "SMAJ5.0A/AC.",
+  "evidence": [
+   {
+    "doc": "MCP73831_datasheet.pdf",
+    "page": 17
+   }
+  ],
+  "source": "verified from rendered page"
+ },
+ {
+  "id": "x16",
+  "type": "unanswerable",
+  "doc_group": "datasheet_mcp73831",
+  "question": "What is the switching frequency of the MCP73831's DC-DC converter?",
+  "reference_answer": "Not found — the MCP73831 is a linear charger; no switching frequency is given.",
+  "evidence": [],
+  "source": "absence verified"
+ },
+ {
+  "id": "x17",
+  "type": "table",
+  "doc_group": "nasa_x57",
+  "question": "In Table I of the X-57 power and command system paper, what part number and configuration are listed for TE Connectivity?",
+  "reference_answer": "WMSHF260-0113-2-9, Round/Unshield.",
+  "evidence": [
+   {
+    "doc": "NASA_X57_power_command_system.pdf",
+    "page": 5
+   }
+  ],
+  "source": "verified; borderless table"
+ },
+ {
+  "id": "x18",
+  "type": "table",
+  "doc_group": "nasa_x57",
+  "question": "In Table II of the X-57 paper, what criticality is assigned to the 'Battery contactor (4x)' failure scenario?",
+  "reference_answer": "S.",
+  "evidence": [
+   {
+    "doc": "NASA_X57_power_command_system.pdf",
+    "page": 8
+   }
+  ],
+  "source": "verified; rotated column headers",
+  "note": "the criticality code; the paper's legend expands S as 'Land as soon as possible'"
+ },
+ {
+  "id": "x19",
+  "type": "figure",
+  "doc_group": "nasa_x57",
+  "question": "According to Fig. 6 of the X-57 paper, what conductors make up the flat traction cable and how wide is it?",
+  "reference_answer": "Four 10 AWG silver-plated copper conductors per cable; 0.61 in wide (0.22 in tall), 1000 V-rated extruded insulation.",
+  "evidence": [
+   {
+    "doc": "NASA_X57_power_command_system.pdf",
+    "page": 4
+   }
+  ],
+  "source": "verified from 300-dpi crop"
+ },
+ {
+  "id": "x20",
+  "type": "unanswerable",
+  "doc_group": "nasa_x57",
+  "question": "What PWM switching frequency do the X-57 cruise motor controllers use?",
+  "reference_answer": "Not found — not stated.",
+  "evidence": [],
+  "source": "absence verified"
+ },
+ {
+  "id": "x21",
+  "type": "figure",
+  "doc_group": "arxiv_pinching",
+  "question": "In the tactile pinching paper (arXiv 2106.01110), what does Fig. 9(b) show?",
+  "reference_answer": "The final configuration (system equilibrium state) of the pinching controller on the tactile Shadow Modular Grasper for three objects (post-it notes, cardboard box, plastic lemon).",
+  "evidence": [
+   {
+    "doc": "arxiv_2106.01110_tactile_pinching.pdf",
+    "page": 6
+   }
+  ],
+  "source": "verified from caption"
+ },
+ {
+  "id": "x22",
+  "type": "table",
+  "doc_group": "arxiv_pinching",
+  "question": "In Table II of the tactile pinching paper, what is Sensor 2's MAE for roll (phi)?",
+  "reference_answer": "0.45° (range 16°).",
+  "evidence": [
+   {
+    "doc": "arxiv_2106.01110_tactile_pinching.pdf",
+    "page": 6
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x23",
+  "type": "table",
+  "doc_group": "arxiv_pinching",
+  "question": "What batch size was used to train the tactile pose model in the pinching paper (Table I)?",
+  "reference_answer": "16.",
+  "evidence": [
+   {
+    "doc": "arxiv_2106.01110_tactile_pinching.pdf",
+    "page": 4
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x24",
+  "type": "figure",
+  "doc_group": "arxiv_pinching",
+  "question": "What objects are used in the simulation of Fig. 5 of the tactile pinching paper, and what is their mass?",
+  "reference_answer": "A cube (side 0.048 m), a trapezoidal object (height 0.048 m, small base 0.0277 m, side angles 30 and 15 deg) and a sphere (radius 0.024 m), each of mass 0.0021 kg.",
+  "evidence": [
+   {
+    "doc": "arxiv_2106.01110_tactile_pinching.pdf",
+    "page": 5
+   }
+  ],
+  "source": "verified from caption"
+ },
+ {
+  "id": "x25",
+  "type": "unanswerable",
+  "doc_group": "arxiv_pinching",
+  "question": "What grasp success rate did the pinching controller achieve on the real hand?",
+  "reference_answer": "Not found — only qualitative demonstrations are reported.",
+  "evidence": [],
+  "source": "absence verified by the sourcing agent"
+ },
+ {
+  "id": "x26",
+  "type": "factual",
+  "doc_group": "scanned_telemetry_1965",
+  "question": "What is the maximum shift-register length of the telemetry generator in the 1965 GSFC Telemetry Test System report, and the longest pseudo-random sequence it can produce?",
+  "reference_answer": "20 bits; a sequence of 1,048,575 bits.",
+  "evidence": [
+   {
+    "doc": "NASA_1965_telemetry_test_system.pdf",
+    "page": 5
+   }
+  ],
+  "source": "verified from page image"
+ },
+ {
+  "id": "x27",
+  "type": "factual",
+  "doc_group": "scanned_telemetry_1965",
+  "question": "In the 1965 Telemetry Test System report, how many bits passed through the system at 2 megacycles with no internal errors?",
+  "reference_answer": "576 × 10^8 bits.",
+  "evidence": [
+   {
+    "doc": "NASA_1965_telemetry_test_system.pdf",
+    "page": 12
+   }
+  ],
+  "source": "verified from image; text layer loses the superscript",
+  "trap": "text layer reads '576 X 108'"
+ },
+ {
+  "id": "x28",
+  "type": "factual",
+  "doc_group": "scanned_telemetry_1965",
+  "question": "Which three telemetry codes can the Format Generator of the 1965 Telemetry Test System output?",
+  "reference_answer": "NRZ-Change, NRZ-Mark and Bi-Phase.",
+  "evidence": [
+   {
+    "doc": "NASA_1965_telemetry_test_system.pdf",
+    "page": 5
+   }
+  ],
+  "source": "verified; text layer has 'NERZ-Mark'"
+ },
+ {
+  "id": "x29",
+  "type": "factual",
+  "doc_group": "scanned_telemetry_1965",
+  "question": "Up to what altitude were the fly-by tests of the Telemetry Test System performed?",
+  "reference_answer": "18,000 feet.",
+  "evidence": [
+   {
+    "doc": "NASA_1965_telemetry_test_system.pdf",
+    "page": 12
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x30",
+  "type": "table",
+  "doc_group": "scanned_tn_d3411",
+  "question": "In Table 1 of NASA TN D-3411, what are the maximum and expected data points per day for the Orbiting Geophysical Observatory (S-49)?",
+  "reference_answer": "610.0 maximum and 90 expected (millions of data points per day).",
+  "evidence": [
+   {
+    "doc": "NASA_TN_D3411_1966.pdf",
+    "page": 6
+   }
+  ],
+  "source": "verified from image; ruled table with two-level header"
+ },
+ {
+  "id": "x31",
+  "type": "table",
+  "doc_group": "scanned_tn_d3411",
+  "question": "What telemetry type does Explorer 18 (IMP) use according to Table 1 of NASA TN D-3411?",
+  "reference_answer": "PFM.",
+  "evidence": [
+   {
+    "doc": "NASA_TN_D3411_1966.pdf",
+    "page": 6
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x32",
+  "type": "factual",
+  "doc_group": "scanned_tn_d3411",
+  "question": "According to NASA TN D-3411, at what average rate do the fourteen GSFC-managed satellites produce data?",
+  "reference_answer": "About 60 million data points per day.",
+  "evidence": [
+   {
+    "doc": "NASA_TN_D3411_1966.pdf",
+    "page": 5
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x33",
+  "type": "factual",
+  "doc_group": "scanned_tn_d3411",
+  "question": "What is the OGO data transmission rate given in NASA TN D-3411?",
+  "reference_answer": "64,000 bits per second.",
+  "evidence": [
+   {
+    "doc": "NASA_TN_D3411_1966.pdf",
+    "page": 6
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x34",
+  "type": "unanswerable",
+  "doc_group": "scanned_tn_d3411",
+  "question": "What was the total cost of the GSFC data processing system described in NASA TN D-3411?",
+  "reference_answer": "Not found.",
+  "evidence": [],
+  "source": "absence assumed; to be confirmed on review"
+ },
+ {
+  "id": "x35",
+  "type": "table",
+  "doc_group": "docx_birds5",
+  "question": "What is the allowable battery temperature range in the BIRDS-5 EM thermal vacuum test procedure?",
+  "reference_answer": "0 °C to 40 °C (Hot + Cold Control Case).",
+  "evidence": [
+   {
+    "doc": "BIRDS5_EM_thermal_vacuum_test_procedure.docx",
+    "page": 19
+   },
+   {
+    "doc": "BIRDS5_EM_thermal_vacuum_test_procedure.docx",
+    "page": 4
+   }
+  ],
+  "source": "verified from document; page from render",
+  "note": "stated both in requirement DR 5 (p4) and Table 10 (p19)"
+ },
+ {
+  "id": "x36",
+  "type": "table",
+  "doc_group": "docx_birds5",
+  "question": "How many Type-K thermocouples are listed in the equipment list of the BIRDS-5 EM thermal vacuum test procedure, and what is their range?",
+  "reference_answer": "20 thermocouples; -180 °C to +1300 °C.",
+  "evidence": [
+   {
+    "doc": "BIRDS5_EM_thermal_vacuum_test_procedure.docx",
+    "page": 15
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x37",
+  "type": "factual",
+  "doc_group": "docx_birds5",
+  "question": "What is the maximum chamber pressure during the BIRDS-5 EM thermal vacuum test?",
+  "reference_answer": "Below 1 × 10^-3 Pa during all conditions.",
+  "evidence": [
+   {
+    "doc": "BIRDS5_EM_thermal_vacuum_test_procedure.docx",
+    "page": 6
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x38",
+  "type": "factual",
+  "doc_group": "docx_birds5",
+  "question": "Who manufactures the thermal vacuum chamber used for the BIRDS-5 EM test, and what is its temperature range?",
+  "reference_answer": "ULVAC KYUSHU CORPORATION; -150 °C to +150 °C.",
+  "evidence": [
+   {
+    "doc": "BIRDS5_EM_thermal_vacuum_test_procedure.docx",
+    "page": 8
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x39",
+  "type": "factual",
+  "doc_group": "docx_birds5",
+  "question": "How long is the soak time at each temperature extreme in the BIRDS-5 EM thermal vacuum test?",
+  "reference_answer": "2 hours, followed by functional tests within the next hour.",
+  "evidence": [
+   {
+    "doc": "BIRDS5_EM_thermal_vacuum_test_procedure.docx",
+    "page": 10
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x40",
+  "type": "structured",
+  "doc_group": "xlsx_olsk",
+  "question": "What is the total material cost of the OLSK small 3D printer according to the costs sheet of its bill of materials?",
+  "reference_answer": "€1,272.10 (shown as 1272.1 in the Material cost row).",
+  "evidence": [
+   {
+    "doc": "OLSK_3d_printer_bom.xlsx",
+    "page": 1
+   }
+  ],
+  "source": "verified from formula result",
+  "trap": "value lives in a SUM formula; header on row 6"
+ },
+ {
+  "id": "x41",
+  "type": "structured",
+  "doc_group": "xlsx_olsk",
+  "question": "What is the largest single cost value in the costs sheet of the OLSK 3D printer BOM, and which item is it?",
+  "reference_answer": "129.06 — the top frame, 3 mm aluminium plate (a merged cost cell covering the frame plates).",
+  "evidence": [
+   {
+    "doc": "OLSK_3d_printer_bom.xlsx",
+    "page": 1
+   }
+  ],
+  "source": "verified",
+  "trap": "merged cell"
+ },
+ {
+  "id": "x42",
+  "type": "structured",
+  "doc_group": "xlsx_olsk",
+  "question": "What is the sum of the Quantity column in the costs sheet of the OLSK 3D printer BOM?",
+  "reference_answer": "584.",
+  "evidence": [
+   {
+    "doc": "OLSK_3d_printer_bom.xlsx",
+    "page": 1
+   }
+  ],
+  "source": "verified"
+ },
+ {
+  "id": "x43",
+  "type": "structured",
+  "doc_group": "csv_secom",
+  "question": "How many test records in the SECOM test log are marked as fail?",
+  "reference_answer": "104 fails (Pass/Fail = 1).",
+  "evidence": [
+   {
+    "doc": "uci_secom_test_log.csv",
+    "page": 1
+   }
+  ],
+  "source": "computed from the file",
+  "trap": "fail is encoded as 1, pass as -1"
+ },
+ {
+  "id": "x44",
+  "type": "structured",
+  "doc_group": "csv_secom",
+  "question": "What is the earliest timestamp among the failing records in the SECOM test log?",
+  "reference_answer": "2008-01-08 05:52:00.",
+  "evidence": [
+   {
+    "doc": "uci_secom_test_log.csv",
+    "page": 1
+   }
+  ],
+  "source": "computed from the file (MIN(time) WHERE Pass/Fail = 1); the file is not in chronological order"
+ },
+ {
+  "id": "x45",
+  "type": "structured",
+  "doc_group": "csv_secom",
+  "question": "In which month of 2008 did the SECOM test log record the most failures, and how many?",
+  "reference_answer": "August 2008, with 38 failures.",
+  "evidence": [
+   {
+    "doc": "uci_secom_test_log.csv",
+    "page": 1
+   }
+  ],
+  "source": "computed from the file"
+ },
+ {
+  "id": "x46",
+  "type": "unanswerable",
+  "doc_group": "csv_secom",
+  "question": "Which operator ran the most tests in the SECOM test log?",
+  "reference_answer": "Not found — the log has no operator column.",
+  "evidence": [],
+  "source": "column absence verified"
+ },
+ {
+  "id": "x47",
+  "type": "table",
+  "doc_group": "icdar",
+  "question": "In the income-level table of icdar2013_us-003, what income range defines 'Upper middle' in 2003?",
+  "reference_answer": "$48,001–$66,900.",
+  "evidence": [
+   {
+    "doc": "icdar2013_us-003.pdf",
+    "page": 1
+   }
+  ],
+  "source": "ICDAR ground truth"
+ },
+ {
+  "id": "x48",
+  "type": "table",
+  "doc_group": "icdar",
+  "question": "In icdar2013_eu-002, what was the Q3 value for 2006 and the 2007 total?",
+  "reference_answer": "Q3 2006 = 96.5; 2007 total = 633.9.",
+  "evidence": [
+   {
+    "doc": "icdar2013_eu-002.pdf",
+    "page": 1
+   }
+  ],
+  "source": "ICDAR ground truth"
+ },
+ {
+  "id": "x49",
+  "type": "table",
+  "doc_group": "icdar",
+  "question": "In icdar2013_us-005, what percentage of the area median income defines 'Moderate-income'?",
+  "reference_answer": "At least 50 and less than 80 percent of the area median income.",
+  "evidence": [
+   {
+    "doc": "icdar2013_us-005.pdf",
+    "page": 1
+   }
+  ],
+  "source": "ICDAR ground truth"
+ },
+ {
+  "id": "x50",
+  "type": "table",
+  "doc_group": "icdar",
+  "question": "In icdar2013_us-012, how many districts were granted exceptions for OH?",
+  "reference_answer": "About 100 (~100).",
+  "evidence": [
+   {
+    "doc": "icdar2013_us-012.pdf",
+    "page": 1
+   }
+  ],
+  "source": "ICDAR ground truth"
+ },
+ {
+  "id": "x51",
+  "type": "table",
+  "doc_group": "icdar",
+  "question": "In the first table of icdar2013_eu-018, what sample size (n) and %Pos are reported for Germany in 2007?",
+  "reference_answer": "n = 123, 0.8 % positive.",
+  "evidence": [
+   {
+    "doc": "icdar2013_eu-018.pdf",
+    "page": 1
+   }
+  ],
+  "source": "ICDAR ground truth",
+  "trap": "two-level header (2007 / 2006 over n / %Pos)"
+ },
+ {
+  "id": "x52",
+  "type": "unanswerable",
+  "doc_group": "cross",
+  "question": "What is the rated torque of the RJA-40 actuator?",
+  "reference_answer": "Not found — the RJA-40 is not in this corpus.",
+  "evidence": [],
+  "source": "document not in corpus"
+ }
+]

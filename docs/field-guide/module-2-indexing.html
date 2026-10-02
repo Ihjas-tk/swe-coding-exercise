@@ -1,0 +1,638 @@
+<title>Indexing Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sheet 2 of the drafting set. Same tokens as sheet 1; the running example is still the "320 A" row on EV-BMS-100 p.2, now followed into the index. */
+:root{
+  --paper:#F2F5F4; --card:#FFFFFF; --ink:#14202B; --muted:#56636E; --rule:#D3DADD; --grid:rgba(20,32,43,.045);
+  --redline:#C8341B; --redline-soft:rgba(200,52,27,.09);
+  --lib:#17708F; --lib-soft:rgba(23,112,143,.11);
+  --ours:#3A50C8; --ours-soft:rgba(58,80,200,.10);
+  --ok:#2F7D4A; --ok-soft:rgba(47,125,74,.10);
+  --warn:#A86B00; --warn-soft:rgba(168,107,0,.11);
+  --violet:#7A3FB0; --violet-soft:rgba(122,63,176,.10);
+  --display:"Archivo",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0E151B; --card:#141E26; --ink:#E2E8EB; --muted:#98A6B0; --rule:#26343E; --grid:rgba(226,232,235,.035);
+  --redline:#FF6E52; --redline-soft:rgba(255,110,82,.13);
+  --lib:#55B8D6; --lib-soft:rgba(85,184,214,.13);
+  --ours:#93A5FF; --ours-soft:rgba(147,165,255,.13);
+  --ok:#5CC384; --ok-soft:rgba(92,195,132,.12);
+  --warn:#E3A93B; --warn-soft:rgba(227,169,59,.13);
+  --violet:#C59BFF; --violet-soft:rgba(197,155,255,.13); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E151B; --card:#141E26; --ink:#E2E8EB; --muted:#98A6B0; --rule:#26343E; --grid:rgba(226,232,235,.035);
+  --redline:#FF6E52; --redline-soft:rgba(255,110,82,.13);
+  --lib:#55B8D6; --lib-soft:rgba(85,184,214,.13);
+  --ours:#93A5FF; --ours-soft:rgba(147,165,255,.13);
+  --ok:#5CC384; --ok-soft:rgba(92,195,132,.12);
+  --warn:#E3A93B; --warn-soft:rgba(227,169,59,.13);
+  --violet:#C59BFF; --violet-soft:rgba(197,155,255,.13); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.65;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:20px;padding-block:28px 80px}
+h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.18}
+h1{font-size:clamp(2rem,5vw,3rem);font-weight:780;font-variation-settings:"wdth" 82}
+h2{font-size:clamp(1.45rem,3vw,1.8rem);font-weight:720;font-variation-settings:"wdth" 86}
+h3{font-size:1.15rem;font-weight:680;font-variation-settings:"wdth" 92}
+h4{font-size:1rem;font-weight:650}
+p{margin:0}
+a{color:var(--ours)}
+.prose{max-width:66ch}
+.big{font-size:1.08rem}
+code,.mono{font-family:var(--mono);font-size:.85em}
+code{background:var(--ours-soft);padding:.05em .35em;border-radius:3px;overflow-wrap:anywhere}
+.muted{color:var(--muted)}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+:focus-visible{outline:2px solid var(--redline);outline-offset:2px}
+.stack{display:grid;gap:12px}
+.card{background:var(--card);border:1px solid var(--rule);padding:18px 20px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.scroll-x{overflow-x:auto}
+
+.titleblock{display:grid;grid-template-columns:1fr auto;border:1.5px solid var(--ink);background:var(--card)}
+.tb-main{padding:22px 24px;display:grid;gap:10px;border-right:1.5px solid var(--ink);min-width:0}
+.tb-meta{display:grid;grid-template-columns:auto auto;font-family:var(--mono);font-size:.75rem;align-content:start}
+.tb-meta div{padding:8px 12px;border-bottom:1px solid var(--rule)}
+.tb-meta div:nth-child(odd){color:var(--muted);border-right:1px solid var(--rule)}
+.tb-meta div:nth-last-child(-n+2){border-bottom:0}
+@media (max-width:720px){.titleblock{grid-template-columns:1fr}.tb-main{border-right:0;border-bottom:1.5px solid var(--ink)}}
+
+nav.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--rule);margin-inline:-20px;padding:8px 20px;display:flex;gap:4px 16px;flex-wrap:wrap;font-family:var(--mono);font-size:.74rem}
+nav.toc a{color:var(--muted);text-decoration:none}
+nav.toc a:hover{color:var(--ink)}
+
+section{margin-top:60px;display:grid;gap:18px}
+.part{margin-top:72px;border-top:3px double var(--ink);padding-top:14px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.part .eyebrow{color:var(--redline)}
+.head{display:flex;gap:14px;align-items:baseline;border-bottom:1.5px solid var(--ink);padding-bottom:8px}
+.no{font-family:var(--mono);font-size:.78rem;color:var(--redline);border:1.5px solid var(--redline);border-radius:50%;width:2.3em;height:2.3em;display:grid;place-items:center;flex:none}
+
+.analogy{border-left:3px solid var(--lib);background:var(--lib-soft);padding:10px 14px}
+.analogy b,.why b,.note b{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;margin-right:6px}
+.analogy b{color:var(--lib)}
+.why{border-left:3px solid var(--redline);background:var(--redline-soft);padding:10px 14px}
+.why b{color:var(--redline)}
+.note{border-left:3px solid var(--warn);background:var(--warn-soft);padding:10px 14px}
+.note b{color:var(--warn)}
+
+details.code{border:1px dashed var(--rule);background:var(--card);padding:10px 14px}
+details.code summary{cursor:pointer;font-family:var(--mono);font-size:.78rem;color:var(--ours)}
+details.code>div{margin-top:10px;display:grid;gap:8px;font-size:.92rem}
+.fn{font-family:var(--mono);font-size:.78rem;background:var(--ours-soft);color:var(--ours);padding:1px 7px;border-radius:2px;white-space:nowrap}
+
+/* where we are */
+.journey{display:grid;grid-template-columns:repeat(5,1fr);gap:0}
+.journey div{background:var(--card);border:1.5px solid var(--rule);padding:10px 12px;font-size:.85rem;min-width:0}
+.journey div+div{border-left:0}
+.journey .done{color:var(--muted)}
+.journey .on{border-color:var(--redline);box-shadow:inset 0 0 0 1px var(--redline)}
+.journey b{display:block;font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+.journey .on b{color:var(--redline)}
+@media (max-width:640px){.journey{grid-template-columns:1fr}.journey div+div{border-left:1.5px solid var(--rule);border-top:0}}
+
+.inout{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch}
+.inout .box{background:var(--card);border:1.5px solid var(--ink);padding:14px 16px;display:grid;gap:6px;align-content:start;min-width:0}
+.inout .arr{display:grid;place-items:center;font-family:var(--mono);color:var(--muted)}
+@media (max-width:720px){.inout{grid-template-columns:1fr}.inout .arr{transform:rotate(90deg);height:20px}}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0;border:1px solid var(--rule);background:var(--card);margin:0}
+.gloss div{padding:12px 14px;border-bottom:1px solid var(--rule);border-right:1px solid var(--rule)}
+.gloss dt{font-family:var(--mono);font-size:.82rem;font-weight:500;color:var(--ours)}
+.gloss dd{margin:2px 0 0;font-size:.9rem}
+
+/* pipeline stations */
+.stations{display:grid;gap:0;counter-reset:st}
+.station{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:0 14px;position:relative;align-items:start}
+.station::before{content:"";position:absolute;left:16px;top:0;bottom:0;border-left:1.5px solid var(--rule)}
+.station:first-child::before{top:26px}.station:last-child::before{bottom:calc(100% - 26px)}
+.station .dot{counter-increment:st;width:32px;height:32px;border:1.5px solid var(--ink);background:var(--card);border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-size:.78rem;z-index:1;margin-top:10px}
+.station .dot::before{content:counter(st)}
+.station.opt .dot{border-style:dashed}
+.station .body{padding:10px 0 16px;display:grid;gap:4px;min-width:0}
+.station .out{font-family:var(--mono);font-size:.72rem;color:var(--muted);padding-top:16px;text-align:right;white-space:nowrap}
+@media (max-width:640px){.station{grid-template-columns:44px minmax(0,1fr)}.station .out{grid-column:2;text-align:left;padding-top:0;padding-bottom:12px;white-space:normal}}
+
+/* chunk cards */
+.kindgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.chunk{background:var(--card);border:1px solid var(--rule);display:grid;min-width:0}
+.chunk .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:10px 14px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.chunk .kind{font-family:var(--mono);font-size:.74rem;padding:1px 7px;border-radius:2px}
+.kind.text{background:var(--ours-soft);color:var(--ours)}
+.kind.claim{background:var(--violet-soft);color:var(--violet)}
+.kind.table_row,.kind.table{background:var(--ok-soft);color:var(--ok)}
+.kind.figure{background:var(--warn-soft);color:var(--warn)}
+.kind.structured_row{background:var(--lib-soft);color:var(--lib)}
+.chunk .count{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.chunk .rule{padding:10px 14px;font-size:.88rem}
+.chunk .sample{padding:10px 14px;border-top:1px dashed var(--rule);font-family:var(--mono);font-size:.74rem;line-height:1.6;overflow-wrap:anywhere;color:var(--ink)}
+.chunk .sample .pfx{color:var(--muted);display:block}
+.chunk .sample .hl{background:var(--redline-soft);color:var(--redline)}
+
+/* bars */
+.kbar{display:flex;height:26px;border:1.5px solid var(--ink);overflow:hidden}
+.kbar span{display:grid;place-items:center;font-family:var(--mono);font-size:.68rem;color:var(--ink);white-space:nowrap;overflow:hidden;min-width:0}
+.kbar-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-family:var(--mono);font-size:.74rem;font-variant-numeric:tabular-nums}
+.kbar-legend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}
+
+/* anatomy */
+.anat{display:grid;gap:0;border:1.5px solid var(--ink);background:var(--card)}
+.anat div{display:grid;grid-template-columns:140px minmax(0,1fr);gap:12px;padding:9px 14px;border-bottom:1px solid var(--rule);font-size:.88rem;align-items:start}
+.anat div:last-child{border-bottom:0}
+.anat .lbl{font-family:var(--mono);font-size:.72rem;color:var(--muted);padding-top:2px}
+.anat .src{display:block;font-family:var(--mono);font-size:.68rem;color:var(--lib)}
+@media (max-width:560px){.anat div{grid-template-columns:1fr;gap:2px}}
+
+/* repair */
+.repair{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.rp{background:var(--card);border:1px solid var(--rule);padding:10px;display:grid;gap:4px;text-align:center;font-family:var(--mono)}
+.rp .from{font-size:1.2rem;color:var(--redline);text-decoration:line-through}
+.rp .to{font-size:1.2rem;color:var(--ok);font-weight:500}
+.rp .why2{font-size:.68rem;color:var(--muted)}
+.rp.keep .from{text-decoration:none;color:var(--ink)}
+.rp.drop .to{color:var(--muted);font-weight:400}
+
+table.t{border-collapse:collapse;width:100%;font-size:.9rem}
+table.t th,table.t td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--rule)}
+table.t th{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;border-bottom:1.5px solid var(--ink)}
+table.t td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+table.t tr:last-child td{border-bottom:0}
+
+/* search compare */
+.qtabs{display:flex;flex-wrap:wrap;gap:6px}
+.qtabs button{font:inherit;font-size:.86rem;padding:6px 12px;background:var(--card);color:var(--ink);border:1.5px solid var(--rule);cursor:pointer;text-align:left}
+.qtabs button[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:720px){.cmp{grid-template-columns:1fr}}
+.cmp .col{background:var(--card);border:1px solid var(--rule);padding:14px;display:grid;gap:8px;align-content:start;min-width:0}
+.res{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:baseline;font-size:.86rem;padding:6px 8px;border:1px solid var(--rule)}
+.res .r{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.res .s{font-family:var(--mono);font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.res.hit{border-color:var(--ok);background:var(--ok-soft)}
+.res.miss{opacity:.85}
+.verdict{font-size:.88rem;padding:8px 10px;border-left:3px solid var(--rule)}
+.verdict.good{border-color:var(--ok)}
+.verdict.bad{border-color:var(--redline)}
+
+.idrow{display:flex;flex-wrap:wrap;gap:6px}
+.idrow span{font-family:var(--mono);font-size:.76rem;padding:1px 7px;border:1px solid var(--rule);background:var(--card)}
+
+.qa{border:1px solid var(--rule);background:var(--card)}
+.qa details{border-bottom:1px solid var(--rule);padding:12px 16px}
+.qa details:last-child{border-bottom:0}
+.qa summary{cursor:pointer;font-weight:600}
+.qa details>div{margin-top:8px;font-size:.93rem;display:grid;gap:6px}
+
+.route-list{list-style:none;margin:0;padding:0;border:1px solid var(--rule);background:var(--card)}
+.route-list li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;padding:11px 14px;border-bottom:1px solid var(--rule)}
+.route-list li:last-child{border-bottom:0}
+.route-list input{margin-top:5px;width:16px;height:16px;accent-color:var(--redline)}
+.route-list label{display:grid;gap:2px;cursor:pointer;min-width:0}
+.route-list .path{font-family:var(--mono);font-size:.82rem;overflow-wrap:anywhere}
+.route-list li.done .path{text-decoration:line-through;color:var(--muted)}
+.progress{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+
+footer{margin-top:64px;border-top:1.5px solid var(--ink);padding-top:12px;font-family:var(--mono);font-size:.74rem;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+</style>
+
+<div class="wrap">
+
+<header class="titleblock">
+  <div class="tb-main">
+    <span class="eyebrow">swe-coding-exercise · field guide · sheet 2</span>
+    <h1>Indexing Field Guide</h1>
+    <p class="prose big">Sheet 1 turned every file into neat page-by-page notes. This sheet covers step 2: cutting those notes into small searchable pieces, building a dictionary of patent part numbers, and filing everything so it can be found by <b>exact words</b> or by <b>meaning</b>.</p>
+    <p class="prose muted">Same format as before: the idea first, real output from this repo's index, and code detail in the <span class="mono" style="color:var(--ours)">▸ In the code</span> boxes. Previous sheet: <a href="https://claude.ai/artifact/4naVixobZZjB1ZrokZwG8B">Answer Engine Field Guide</a> (extraction).</p>
+  </div>
+  <div class="tb-meta">
+    <div>SHEET</div><div>2 of 5</div>
+    <div>MODULE</div><div>Indexing</div>
+    <div>FOLDER</div><div>ae/index/</div>
+    <div>OUTPUT</div><div>229 chunks</div>
+    <div>EXAMPLE</div><div>the 320 A row</div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#where">A1 where we are</a>
+  <a href="#words">A2 words</a>
+  <a href="#why">B1 why index</a>
+  <a href="#stations">B2 six stations</a>
+  <a href="#chunks">B3 chunks</a>
+  <a href="#numerals">B4 part numbers</a>
+  <a href="#figchunk">B5 figure cards</a>
+  <a href="#ids">B6 identifiers</a>
+  <a href="#search">B7 two searches</a>
+  <a href="#file">B8 the index file</a>
+  <a href="#tools">B9 toolbox</a>
+  <a href="#wrong">B10 limits</a>
+  <a href="#route">B11 read the code</a>
+</nav>
+
+<!-- ================================================================ PART A -->
+<div class="part"><span class="eyebrow">Part A</span><h2>Picking up where sheet 1 stopped</h2></div>
+
+<section id="where">
+  <div class="head"><span class="no">A1</span><h2>Where we are</h2></div>
+  <div class="journey">
+    <div class="done"><b>STEP 1 ✓</b>Extraction</div>
+    <div class="on"><b>STEP 2 · this sheet</b>Indexing</div>
+    <div><b>STEP 3</b>Retrieval</div>
+    <div><b>STEP 4</b>Answering</div>
+    <div><b>STEP 5</b>Evaluation</div>
+  </div>
+  <div class="inout">
+    <div class="box"><span class="eyebrow">comes in</span><p>The notes from step 1: 7 documents, each a list of pages, each page a list of text, table and figure blocks. Plus the spreadsheet rows already loaded into SQLite.</p></div>
+    <div class="arr" aria-hidden="true">→</div>
+    <div class="box"><span class="eyebrow">goes out</span><p>One database file, <code>data/index/hybrid.sqlite</code>, holding <b>229 chunks</b>, two kinds of search index over them, a dictionary of <b>47 patent part numbers</b>, and 10 AI descriptions of figures.</p></div>
+  </div>
+  <div class="analogy"><b>Library analogy</b>Step 1 took notes on every book. Step 2 copies those notes onto index cards (one idea per card), writes the book and page on every card, and builds two catalogues: one alphabetical by exact words, one grouped by topic.</div>
+</section>
+
+<section id="words">
+  <div class="head"><span class="no">A2</span><h2>New words for this sheet</h2></div>
+  <dl class="gloss">
+    <div><dt>chunk</dt><dd>One index card: a small piece of text (a paragraph group, one table row, one figure…) that search can return on its own. Always from exactly one page.</dd></div>
+    <div><dt>token</dt><dd>Roughly a word or part of a word. Chunk sizes are measured in tokens. The code estimates: words × 1.33.</dd></div>
+    <div><dt>prefix</dt><dd>A label stuck on the front of every chunk saying where it came from: document title › section › page.</dd></div>
+    <div><dt>keyword search (BM25)</dt><dd>Finds chunks that share <b>words</b> with the question, scoring rare words higher. Fast and exact, but blind to synonyms.</dd></div>
+    <div><dt>embedding</dt><dd>A list of 768 numbers that represents what a piece of text <b>means</b>. Texts with similar meaning get similar numbers.</dd></div>
+    <div><dt>dense search</dt><dd>Search by meaning: turn the question into an embedding and find the chunks whose embeddings are closest. Catches synonyms, but weak on exact numbers.</dd></div>
+    <div><dt>reference numeral</dt><dd>The numbers in patent drawings that point at parts ("160"). The patent text says what each one is ("a control unit 160").</dd></div>
+    <div><dt>identifier</dt><dd>Anything that must match exactly: part numbers (FVT-ESC-40A), patent numbers, "FIG. 2", values with units (320 A), reference numerals.</dd></div>
+    <div><dt>VLM</dt><dd>Vision-language model: an AI that can look at an image and describe it. Here, Claude Haiku describes each figure once, during indexing.</dd></div>
+    <div><dt>FTS5</dt><dd>SQLite's built-in full-text search engine. It does the BM25 keyword search, so no separate search server is needed.</dd></div>
+  </dl>
+</section>
+
+<!-- ================================================================ PART B -->
+<div class="part"><span class="eyebrow">Part B</span><h2>Step 2, Indexing, slowly</h2></div>
+
+<section id="why">
+  <div class="head"><span class="no">B1</span><h2>Why not just give Claude all the documents?</h2></div>
+  <p class="prose">For 7 small documents you nearly could. But the brief says the system must work on a 100-page PDF and on a hidden test set, and answers must cite the exact page. Indexing solves three problems:</p>
+  <div class="grid3">
+    <div class="card stack"><h4>Size</h4><p style="font-size:.92rem">Hundreds of pages don't fit well in one prompt, cost more, and make the model more likely to miss a detail. Small pieces let us send only the relevant ones.</p></div>
+    <div class="card stack"><h4>Citations</h4><p style="font-size:.92rem">If every piece belongs to exactly one page, then "the answer came from this piece" automatically means "the answer is on this page".</p></div>
+    <div class="card stack"><h4>Finding needles</h4><p style="font-size:.92rem">Questions here hinge on things like "320 A", "FVT-ESC-40A" or "160". Ordinary search handles those badly unless the index is built to match them exactly.</p></div>
+  </div>
+  <p class="muted prose" style="font-size:.9rem">The README lists a "whole corpus in the prompt" baseline as future work, to check that retrieval actually beats the simple approach on a corpus this small. Expect to be asked about it.</p>
+</section>
+
+<section id="stations">
+  <div class="head"><span class="no">B2</span><h2>The six stations of <code style="background:none;padding:0">make ingest</code></h2></div>
+  <p class="prose">One command builds the whole index, in this order. Each station feeds the next. Dashed circles are optional.</p>
+  <div class="stations">
+    <div class="station"><span class="dot"></span><div class="body"><h4>Extract every PDF and DOCX</h4><p style="font-size:.9rem">Sheet 1. Uses the page cache, so this is instant on a re-run.</p></div><span class="out">7 documents</span></div>
+    <div class="station"><span class="dot"></span><div class="body"><h4>Load the spreadsheets</h4><p style="font-size:.9rem">Sheet 1, detail "+". The CSV and XLSX become SQL tables inside the same index file.</p></div><span class="out">134 rows</span></div>
+    <div class="station"><span class="dot"></span><div class="body"><h4>Build the part-number dictionary</h4><p style="font-size:.9rem">Read the patent text and record "160 = control unit" and so on. Needed before chunking, because figure chunks use it (B4).</p></div><span class="out">47 numerals · 20 figure definitions</span></div>
+    <div class="station opt"><span class="dot"></span><div class="body"><h4>Describe each figure with AI <span class="muted" style="font-weight:400">(optional, needs an API key)</span></h4><p style="font-size:.9rem">Claude Haiku looks at each figure image and writes a structured description. Skipped without a key; everything else still works.</p></div><span class="out">10 descriptions</span></div>
+    <div class="station"><span class="dot"></span><div class="body"><h4>Cut chunks and store them with keyword indexes</h4><p style="font-size:.9rem">Turn every page into cards (B3), tag each with its identifiers (B6), and write them to SQLite with three keyword indexes (B7).</p></div><span class="out">229 chunks</span></div>
+    <div class="station"><span class="dot"></span><div class="body"><h4>Compute embeddings</h4><p style="font-size:.9rem">Run every chunk through a local embedding model and store its 768 numbers, so the chunk can be found by meaning.</p></div><span class="out">229 × 768</span></div>
+  </div>
+  <details class="code"><summary>▸ In the code</summary><div>
+    <p><code>ae/index/ingest.py</code>: <span class="fn">ingest()</span> is these six stations in about 40 lines, the best map of the module. <span class="fn">_describe_figures</span> is station 4.</p>
+    <p><code>make ingest</code> runs <code>uv run ae ingest --backend hybrid --embed ibm-granite/granite-embedding-english-r2 --vlm</code>. <code>make ingest-nodense</code> skips stations 4 and 6, so no model downloads are needed. <code>make ingest-all</code> builds one index per backend (thin, docling, hybrid) so the evaluation can compare them.</p>
+  </div></details>
+</section>
+
+<section id="chunks">
+  <div class="head"><span class="no">B3</span><h2>Cutting the notes into chunks</h2></div>
+  <p class="prose">A chunk is what search returns, so its shape decides what search can find. The rule of thumb: <b>one chunk = one thing a question could be about</b>. A table row is one fact; a patent claim is one complete statement; a figure is one picture. So the chunker makes six kinds of card, each cut differently. Here are all six, each with a real example from this index:</p>
+
+  <div class="card stack">
+    <span class="eyebrow">the 229 chunks in the hybrid index, by kind</span>
+    <div class="kbar" role="img" aria-label="structured_row 134, table_row 35, text 32, claim 14, figure 9, table 5">
+      <span style="width:58.5%;background:var(--lib-soft)">structured_row 134</span>
+      <span style="width:15.3%;background:var(--ok-soft)">row 35</span>
+      <span style="width:14%;background:var(--ours-soft)">text 32</span>
+      <span style="width:6.1%;background:var(--violet-soft)">14</span>
+      <span style="width:3.9%;background:var(--warn-soft)">9</span>
+      <span style="width:2.2%;background:var(--ok-soft);border-left:1px solid var(--ok)">5</span>
+    </div>
+    <div class="kbar-legend">
+      <span><i style="background:var(--lib)"></i>structured_row 134</span>
+      <span><i style="background:var(--ok)"></i>table_row 35</span>
+      <span><i style="background:var(--ours)"></i>text 32</span>
+      <span><i style="background:var(--violet)"></i>claim 14</span>
+      <span><i style="background:var(--warn)"></i>figure 9</span>
+      <span><i style="background:var(--ok)"></i>table 5</span>
+    </div>
+  </div>
+
+  <div class="kindgrid">
+    <div class="chunk">
+      <div class="top"><span class="kind table_row">table_row</span><span class="count">one per table row · 35</span></div>
+      <p class="rule">Every row becomes its own card, with each value labelled by its column name and the table's title in front. <b>Our example lives here.</b></p>
+      <div class="sample"><span class="pfx">EV-BMS-100 Battery Management System › 3. Electrical Specifications › p.2</span>Table: 3. Electrical Specifications | Parameter: <span class="hl">Max discharge current</span> | Value: <span class="hl">320 A</span> | Notes: continuous, 450 A for 10 s</div>
+    </div>
+    <div class="chunk">
+      <div class="top"><span class="kind table">table</span><span class="count">one per table · 5</span></div>
+      <p class="rule">The whole table again as one card, for questions that span several rows ("compare charge and discharge current"). Very big tables get a header-only card instead.</p>
+      <div class="sample"><span class="pfx">EV-BMS-100 … › 3. Electrical Specifications › p.2</span>3. Electrical Specifications<br>| Parameter | Value | Notes |<br>| Nominal pack voltage | 355.2 V | … |<br>| Max charge current | 120 A | … | …</div>
+    </div>
+    <div class="chunk">
+      <div class="top"><span class="kind text">text</span><span class="count">paragraph groups · 32</span></div>
+      <p class="rule">Consecutive paragraphs packed together up to about 300 tokens. A text card <b>never crosses a page or a section heading</b>; a new heading starts a new card.</p>
+      <div class="sample"><span class="pfx">ROBOTIC GRIPPER › BACKGROUND OF THE INVENTION › p.1</span>Industrial robots often employ an articulated mobile structure, commonly referred to as an arm, with mobility approximating that of a human arm…</div>
+    </div>
+    <div class="chunk">
+      <div class="top"><span class="kind claim">claim</span><span class="count">one per patent claim · 14</span></div>
+      <p class="rule">Patent claims are numbered, self-contained statements, so each gets its own card and keeps its number.</p>
+      <div class="sample"><span class="pfx">UNMANNED AERIAL VEHICLE (UAV) … › CLAIMS › p.1</span>2. The unmanned aerial vehicle of claim 1, wherein the onboard power source comprises three batteries 38 symmetrically…</div>
+    </div>
+    <div class="chunk">
+      <div class="top"><span class="kind figure">figure</span><span class="count">one per figure · 9</span></div>
+      <p class="rule">A picture can't be searched, so its card is <b>text about the picture</b>: caption, labels, what each label means, and the AI description. B5 takes one apart.</p>
+      <div class="sample"><span class="pfx">EV-BMS-100 … › 4. Mechanical Specifications › p.2</span>Figure 2 — BMS enclosure rendering showing the four M12 connector ports… | VLM description: 3D rendering of a rectangular BMS enclosure with four M12 connector ports on the front face. | Counts: 4 M12 connector ports</div>
+    </div>
+    <div class="chunk">
+      <div class="top"><span class="kind structured_row">structured_row</span><span class="count">one per spreadsheet row · 134</span></div>
+      <p class="rule">Each CSV/XLSX row as one line of text, so a row can be found by search too. Counting and totals still go to SQL (sheet 3).</p>
+      <div class="sample"><span class="pfx">bill_of_materials.xlsx › bill_of_materials › row 1</span>part_number=BMS-CTRL-001; description=BMS main controller PCB assembly; manufacturer=Ayr Powertrain; used_on=EV-BMS-100; quantity=1; unit_cost_usd=84.5</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="why"><b>Why the prefix</b>On its own, "Max discharge current | 320 A" doesn't say <em>which product</em>. The prefix "EV-BMS-100 Battery Management System › 3. Electrical Specifications › p.2" puts the product name and section on the card, so a question that mentions "EV-BMS-100" can find it. In the research notes behind the code, this was the one chunking trick with consistent measured gains.</div>
+    <div class="why"><b>Why rows, not just whole tables</b>A row card is small and about exactly one fact, so it scores highly for a question about that fact. Keeping row boundaries was a large win in table-retrieval studies. The whole-table card is kept as well, for questions that span rows.</div>
+  </div>
+  <div class="note"><b>Also dropped</b>Headings don't become cards; they become the section part of the prefix. Page headers and footers, plus any short line that repeats on 3 or more pages, are thrown away, so "US 8,485,576 B2 Jul. 16, 2013" on every page doesn't pollute search.</div>
+  <details class="code"><summary>▸ In the code</summary><div>
+    <p><code>ae/index/chunker.py</code>: <span class="fn">chunk_document</span> walks each page's blocks in reading order and calls <span class="fn">_emit_table</span> or <span class="fn">_emit_figure</span>, or packs text. <span class="fn">row_text</span> builds the "Table: … | col: value" line. <span class="fn">_merge_small</span> folds a tiny leftover text chunk (under 60 tokens) into the previous one on the same page and section. <span class="fn">running_lines</span> finds repeating headers. <span class="fn">structured_chunks</span> reads the spreadsheet rows back from SQLite.</p>
+    <p>Sizes: <code>TARGET_TOKENS 300</code>, <code>MAX_TOKENS 450</code>, <code>MIN_TOKENS 60</code>, <code>BIG_TABLE_TOKENS 400</code>. There is no overlap between text chunks; the docstring notes that simple size-bounded packing measured as well as "smart" chunking.</p>
+    <p>Chunk ids read like addresses: <code>EV-BMS-100_design_document.pdf#p2#table_row3</code> = document # page # kind + counter.</p>
+    <p>To see chunks drawn on the actual pages: <code>uv run python plots/plot_chunks.py</code>, then open <code>plots/out/chunks/index.html</code>.</p>
+  </div></details>
+</section>
+
+<section id="numerals">
+  <div class="head"><span class="no">B4</span><h2>The patent part-number dictionary</h2></div>
+  <p class="prose">Patent drawings label parts with bare numbers. A question like <em>"What is labelled 160 in the gripper patent?"</em> can't be answered from the drawing alone: the drawing just shows "160". The meaning is in the text, where every patent says something like <em>"…preferably controlled by a <b>control unit 160</b>."</em></p>
+  <p class="prose">So this station reads all the patent text and builds a dictionary from the pattern <b>"some words, then a number"</b>. Here is what it found for the gripper patent:</p>
+  <div class="card scroll-x" style="padding:4px 10px">
+    <table class="t">
+      <tr><th>numeral</th><th>part name</th><th>other names seen</th><th>pages</th><th>times</th></tr>
+      <tr><td class="n">50</td><td>object</td><td></td><td class="n">1, 2</td><td class="n">3</td></tr>
+      <tr><td class="n">100</td><td>end-effector</td><td></td><td class="n">1</td><td class="n">2</td></tr>
+      <tr><td class="n">110</td><td>constraining plates</td><td></td><td class="n">1</td><td class="n">5</td></tr>
+      <tr><td class="n">112</td><td>plate translating/rotating devices</td><td></td><td class="n">1</td><td class="n">1</td></tr>
+      <tr><td class="n">119</td><td>holes</td><td>hole</td><td class="n">1</td><td class="n">3</td></tr>
+      <tr><td class="n">120</td><td>pins</td><td>pin, elongate pins</td><td class="n">1, 2</td><td class="n">9</td></tr>
+      <tr><td class="n">120a</td><td>electromagnet</td><td></td><td class="n">2</td><td class="n">1</td></tr>
+      <tr style="background:var(--redline-soft)"><td class="n"><b>160</b></td><td><b>control unit</b></td><td></td><td class="n">1, 2</td><td class="n">3</td></tr>
+      <tr><td colspan="5" class="muted" style="font-size:.85rem">… 16 entries for this patent, 47 across the corpus</td></tr>
+    </table>
+  </div>
+  <div class="grid2">
+    <div class="card stack">
+      <h4>Not every "word + number" is a part</h4>
+      <p style="font-size:.92rem">The pattern also matches "claim 1", "FIG. 2", "10 Hz", "16-bit", "about 96", years and patent numbers. These are filtered out by a stop-list of words that come before them ("claim", "fig", "about"…), a check for a unit right after the number, and a rule that skips 4-digit numbers of 2000 or more. Design documents don't use reference numerals, so there a number must appear at least twice before it's kept. The tests check that the design docs end up with no numerals.</p>
+    </div>
+    <div class="why"><b>Why trust text over the drawing</b>Reading labels off patent drawings is unreliable: the best published results for drawing-label recognition are around 71% (F1). The text is exact. So the text is the source of truth, and OCR from the drawing is only used to confirm <em>which</em> numerals appear in <em>which</em> figure.</div>
+  </div>
+
+  <h3 style="margin-top:6px">Repairing OCR'd labels with the dictionary</h3>
+  <p class="prose">Sheet 1 mentioned that Tesseract misreads drawing labels, because the pointer line touches the "1". Here are the real number tokens OCR read off the gripper's FIG. 2, and what the dictionary did with each:</p>
+  <div class="repair">
+    <div class="rp keep"><span class="from">119</span><span class="to">119</span><span class="why2">in dictionary ✓</span></div>
+    <div class="rp keep"><span class="from">50</span><span class="to">50</span><span class="why2">in dictionary ✓</span></div>
+    <div class="rp"><span class="from">00</span><span class="to">100</span><span class="why2">lost leading 1</span></div>
+    <div class="rp"><span class="from">10</span><span class="to">110</span><span class="why2">lost leading 1</span></div>
+    <div class="rp"><span class="from">12</span><span class="to">112</span><span class="why2">lost leading 1</span></div>
+    <div class="rp"><span class="from">20</span><span class="to">120</span><span class="why2">lost leading 1</span></div>
+    <div class="rp drop"><span class="from">2</span><span class="to">—</span><span class="why2">no match, ignored</span></div>
+  </div>
+  <div class="why"><b>The safety rule</b>A token is only "repaired" when <b>exactly one</b> dictionary entry could explain it, either by adding one missing leading digit or by swapping a commonly confused digit (1↔7, 6↔8, 0→8). If two entries could explain it, it's left alone rather than guessed.</div>
+  <details class="code"><summary>▸ In the code</summary><div>
+    <p><code>ae/index/numerals.py</code>: <span class="fn">extract_numerals</span> runs the pattern (<code>DEF_RE</code>) with the filters (<code>STOP_BEFORE</code>, <code>UNIT_AFTER_RE</code>). <span class="fn">_clean_name</span> trims "under control of a gate" down to "gate". It handles lists too: "valves 74 and 76" gives two entries.</p>
+    <p><span class="fn">extract_figure_defs</span> finds sentences like "FIG. 2 is a perspective cross section of…" and stores them as figure titles (20 in the corpus). <span class="fn">reconcile_labels</span> is the repair step above. <span class="fn">NumeralIndex</span> holds it all; <span class="fn">glossary</span> produces "160 = control unit" lines; <span class="fn">save</span>/<span class="fn">load</span> store it in the <code>numerals</code> and <code>figure_defs</code> tables.</p>
+    <p>Tests: <code>tests/test_chunker_numerals.py</code> (dev-set numerals, suffixed numerals like 120a, design docs having none, the leading-digit repair).</p>
+  </div></details>
+</section>
+
+<section id="figchunk">
+  <div class="head"><span class="no">B5</span><h2>How a picture becomes a searchable card</h2></div>
+  <p class="prose">This is the real figure chunk for the gripper's FIG. 2, split into its parts. Each part comes from a different source, and together they let text search find a picture.</p>
+  <div class="anat">
+    <div><span class="lbl">caption</span><span>FIG. 2 — Perspective cross section of the gripper end-effector 100 in an unlocked configuration.<span class="src">from extraction (sheet 1)</span></span></div>
+    <div><span class="lbl">description</span><span>perspective cross section of an apparatus of the present invention and a pin locking mechanism … in an unlocked configuration<span class="src">from the patent text: "FIG. 2 is a …" (figure definitions, B4)</span></span></div>
+    <div><span class="lbl">labels</span><span>119, 50, 100, 110, 112, 120<span class="src">OCR'd from the image, repaired with the dictionary (B4)</span></span></div>
+    <div><span class="lbl">glossary</span><span>119 = holes; 50 = object; 100 = end-effector; 110 = constraining plates; 112 = plate translating/rotating devices; 120 = pins<span class="src">dictionary lookup for each confirmed label</span></span></div>
+    <div><span class="lbl">also defined on this page</span><span>102 = main body; 104 = attaching member; 121 = collar; <b>160 = control unit</b><span class="src">numerals the text defines on the same page; marked as weaker evidence</span></span></div>
+    <div><span class="lbl">text in figure</span><span>end-effector (main body) constraining plate … control unit rotating device object lock<span class="src">OCR words of 3+ letters</span></span></div>
+    <div><span class="lbl">VLM description</span><span>Hierarchical block diagram showing the structural components of a gripper end-effector … | Parts: 100 = end-effector …; 160 = control unit … | Counts: 2 constraining plates … | Connections: …<span class="src">Claude Haiku looking at the image, given the caption and glossary</span></span></div>
+  </div>
+  <div class="grid2">
+    <div class="why"><b>Why "also defined on this page"</b>OCR never read "160" off this drawing; the README notes the label sits outside the embedded image. The text on the same page does define it, so it's added in a separate, clearly marked field. That way a question about "160" can still reach this figure, and the answering step knows it's weaker evidence than a label seen in the image.</div>
+    <div class="card stack" style="font-size:.92rem">
+      <h4>The AI description (station 4)</h4>
+      <p>Each figure image goes to Claude Haiku once, with the caption and the dictionary. It's asked for JSON: figure type, a one-line summary, labelled parts, <b>counts with every counted item listed first</b>, connections, visible text, and what it's unsure of. It's told to report only what's visible.</p>
+      <p>The answer is cached on the image's fingerprint, so re-runs cost nothing. For questions like "how many M12 ports?", the image itself is also sent to Claude at answer time (sheet 4), because text descriptions alone measured about 24% worse on visual questions.</p>
+    </div>
+  </div>
+  <details class="code"><summary>▸ In the code</summary><div>
+    <p><code>ae/index/chunker.py</code> → <span class="fn">_emit_figure</span> assembles the parts above, joined with " | ".</p>
+    <p><code>ae/index/vlm.py</code> → <span class="fn">describe_figure</span> (prompt in <code>SYSTEM</code>, one retry, cache in <code>data/cache/vlm.sqlite</code>) and <span class="fn">description_text</span>, which flattens the JSON into the line that gets indexed. The model is set by <code>AE_VLM_MODEL</code> (default <code>claude-haiku-4-5-20251001</code>). The full JSON is also kept in the <code>figure_descriptions</code> table.</p>
+  </div></details>
+</section>
+
+<section id="ids">
+  <div class="head"><span class="no">B6</span><h2>Identifiers: things that must match exactly</h2></div>
+  <p class="prose">Engineers type exact codes, and they type them inconsistently: "FVT-ESC-40A" or "fvtesc40a", "US 8,485,576" or "8485576", "320 A" or "320A". So every chunk gets a list of its identifiers, each stored in normalised forms that all of those spellings will match.</p>
+  <div class="card scroll-x" style="padding:4px 10px">
+    <table class="t">
+      <tr><th>kind</th><th>written in the document</th><th>stored as</th></tr>
+      <tr><td>part number</td><td>EV-BMS-100</td><td><div class="idrow"><span>ev-bms-100</span><span>evbms100</span></div></td></tr>
+      <tr><td>patent number</td><td>US 8,485,576 B2</td><td><div class="idrow"><span>us8485576b2</span></div></td></tr>
+      <tr><td>figure</td><td>FIG. 2</td><td><div class="idrow"><span>fig2</span></div></td></tr>
+      <tr><td>value + unit</td><td>320 A</td><td><div class="idrow"><span>320a</span><span>320 a</span></div></td></tr>
+      <tr><td>reference numeral</td><td>control unit 160</td><td><div class="idrow"><span>ref160</span></div><span class="muted" style="font-size:.8rem">only if 160 is in that document's dictionary</span></td></tr>
+    </table>
+  </div>
+  <div class="card stack">
+    <span class="eyebrow">our example row's identifier list</span>
+    <div class="idrow"><span>320a</span><span>320 a</span><span>450a</span><span>450 a</span><span>10s</span><span>10 s</span></div>
+    <p class="muted" style="font-size:.88rem">"EV-BMS-100" is not in this list: the row's own text never says it. The product name only reaches this card through the prefix. That detail matters in B7.</p>
+  </div>
+  <details class="code"><summary>▸ In the code</summary><div>
+    <p><code>ae/index/identifiers.py</code> (58 lines): one regular expression per kind (<code>PART_RE</code>, <code>PATENT_RE</code>, <code>FIG_RE</code>, <code>VALUE_UNIT_RE</code>), and <span class="fn">extract_identifiers</span> to apply them. Digits inside a part number ("100" in EV-BMS-100) are masked so they aren't mistaken for reference numerals.</p>
+    <p>The same file is reused later: the question parser uses it to spot identifiers in questions (sheet 3), and <span class="fn">numbers_in</span> is used by the answer checker to confirm every number in an answer appears in the cited text (sheet 4).</p>
+  </div></details>
+</section>
+
+<section id="search">
+  <div class="head"><span class="no">B7</span><h2>Two ways to search, and why we need both</h2></div>
+  <div class="grid2">
+    <div class="card stack">
+      <span class="eyebrow">search 1</span><h3>By words (keyword / BM25)</h3>
+      <p style="font-size:.92rem">Find cards containing the question's words, with rare words counting more. It's exact, so it's great for "320 A", "FVT-ESC-40A" and "160". But it doesn't know that "IP rating" and "ingress protection" mean the same thing.</p>
+      <p class="muted" style="font-size:.86rem">Built into SQLite (FTS5). Actually three indexes: normal words (with "currents" matching "current"), exact identifiers, and partial identifiers for typos like "ESC-40".</p>
+    </div>
+    <div class="card stack">
+      <span class="eyebrow">search 2</span><h3>By meaning (embeddings)</h3>
+      <p style="font-size:.92rem">Each card was turned into 768 numbers by a local model. The question is turned into 768 numbers too, and the closest cards win. It catches paraphrases ("how hot" ≈ "operating temperature"), but it's poor at telling 320 from 330.</p>
+      <p class="muted" style="font-size:.86rem">Model: IBM granite-embedding-english-r2, running on your machine. Closeness is cosine similarity: 1.0 means the same meaning.</p>
+    </div>
+  </div>
+  <p class="prose">These are <b>real results</b> from running both searches on this index. Pick a question; green marks the card that actually holds the answer.</p>
+  <div class="qtabs" role="group" aria-label="Example question" id="qtabs"></div>
+  <div class="cmp">
+    <div class="col"><span class="eyebrow">keyword search · top 3</span><div id="kwRes" class="stack" style="gap:6px"></div><p id="kwV" class="verdict"></p></div>
+    <div class="col"><span class="eyebrow">meaning search · top 3</span><div id="dnRes" class="stack" style="gap:6px"></div><p id="dnV" class="verdict"></p></div>
+  </div>
+  <div class="why"><b>The takeaway</b>Each search has blind spots the other covers. So step 3 (retrieval, next sheet) always runs <b>both</b> and merges the two ranked lists. That merge is where the system gets its accuracy.</div>
+  <details class="code"><summary>▸ In the code</summary><div>
+    <p><code>ae/index/store.py</code> → <span class="fn">IndexStore</span>. <span class="fn">keyword_search</span> runs up to three FTS5 queries (<code>chunks_fts</code> prose, <code>chunks_ids</code> exact, <code>chunks_tri</code> trigram), scales each so its best hit scores 1.0, weights them 1.0 / 0.6 / 0.2, and adds them up. Scaling matters: without it, every card that merely mentioned "EV-BMS-100" outranked the row that answers the question. Question words are joined with OR and quoted, because a bare FTS5 query means AND and a hyphen would be read as NOT.</p>
+    <p><span class="fn">dense_search</span> loads all vectors into one numpy matrix and compares the question against every card (brute force). That's fine up to about 100,000 chunks.</p>
+    <p><code>ae/index/embed.py</code> → <span class="fn">embed_texts</span> runs sentence-transformers on CPU with a cache in <code>data/cache/embeddings.sqlite</code> keyed by text fingerprint. <span class="fn">embed_chunks</span> embeds prefix + text. <code>SPECS</code> records that bge models need a "Represent this sentence…" prefix on queries and granite needs none.</p>
+  </div></details>
+</section>
+
+<section id="file">
+  <div class="head"><span class="no">B8</span><h2>What's inside the index file</h2></div>
+  <p class="prose">Everything lives in one SQLite file per backend (<code>data/index/thin.sqlite</code>, <code>docling.sqlite</code>, <code>hybrid.sqlite</code>). You can open one with <code>sqlite3 data/index/hybrid.sqlite</code> and look around.</p>
+  <div class="card scroll-x" style="padding:4px 10px">
+    <table class="t">
+      <tr><th>table</th><th>what's in it</th><th>written by</th></tr>
+      <tr><td><code>chunks</code></td><td>the 229 cards: id, doc, page, kind, text, prefix, section, bbox, identifiers</td><td>store.py</td></tr>
+      <tr><td><code>chunks_fts</code> · <code>chunks_ids</code> · <code>chunks_tri</code></td><td>the three keyword indexes over those cards</td><td>store.py</td></tr>
+      <tr><td><code>embeddings</code></td><td>768 numbers per card per model (several models can coexist for experiments)</td><td>embed.py</td></tr>
+      <tr><td><code>numerals</code> · <code>figure_defs</code></td><td>the part-number dictionary and "FIG. n is a…" titles</td><td>numerals.py</td></tr>
+      <tr><td><code>figure_descriptions</code></td><td>the AI's full JSON for each figure</td><td>ingest.py</td></tr>
+      <tr><td><code>test_log</code> · <code>bill_of_materials</code> · <code>_structured_*</code></td><td>the spreadsheet tables (sheet 1)</td><td>structured.py</td></tr>
+      <tr><td><code>index_meta</code></td><td>backend name, chunk count, embedding model</td><td>store.py</td></tr>
+    </table>
+  </div>
+  <div class="why"><b>Why one SQLite file</b>No server to install or run, and keyword search, vectors, the dictionary and the spreadsheets all sit in one file you can copy or delete. The brief allows self-hosted storage and forbids managed vector databases, and at this size brute-force vector search is fast enough.</div>
+</section>
+
+<section id="tools">
+  <div class="head"><span class="no">B9</span><h2>The toolbox</h2></div>
+  <div class="card scroll-x" style="padding:4px 10px">
+    <table class="t">
+      <tr><th>tool</th><th>its job for us</th><th>why this one</th></tr>
+      <tr><td><b>SQLite FTS5</b></td><td>keyword (BM25) search</td><td>built into Python's sqlite3; supports stemming, exact tokens and trigram partial matching</td></tr>
+      <tr><td><b>sentence-transformers</b></td><td>runs the embedding model locally</td><td>standard library for embedding models; CPU is fine</td></tr>
+      <tr><td><b>granite-embedding-english-r2</b> (IBM)</td><td>the default embedding model, 768 numbers per text</td><td>Apache licence, no special prefixes, best table-retrieval score among similar-size open models in the research notes</td></tr>
+      <tr><td><b>bge-small-en-v1.5</b></td><td>fast fallback model (<code>AE_EMBED_MODEL</code>)</td><td>about 10× faster; about one question worse at top-3 in the eval</td></tr>
+      <tr><td><b>numpy</b></td><td>stores vectors and compares them</td><td>a matrix multiply is all brute-force search needs</td></tr>
+      <tr><td><b>Claude Haiku 4.5</b></td><td>describes each figure once</td><td>can read images; cheap; the result is cached</td></tr>
+      <tr><td><b>pydantic</b></td><td>the <code>Chunk</code> model</td><td>same as the sheet 1 schema</td></tr>
+    </table>
+  </div>
+  <div class="note"><b>Brief's rule</b>Indexing and retrieval must be open-source and local. Everything here is, except the optional figure descriptions. The brief explicitly allows calling an LLM/VLM inside the pipeline to describe a figure.</div>
+</section>
+
+<section id="wrong">
+  <div class="head"><span class="no">B10</span><h2>Choices left out, and known limits</h2></div>
+  <div class="grid2">
+    <div class="card stack"><h4>No AI-written chunk summaries</h4><p style="font-size:.92rem">Some systems ask an LLM to write context for every chunk. The research notes found the gains didn't replicate reliably, so the cheap, predictable prefix is used instead.</p></div>
+    <div class="card stack"><h4>No overlap between chunks</h4><p style="font-size:.92rem">Text chunks don't share sentences. Combined with "never cross a page", every chunk maps to exactly one page for citing.</p></div>
+    <div class="card stack"><h4>The dictionary is pattern-based</h4><p style="font-size:.92rem">"left and right wings 14, 16" gives both numbers the whole phrase as a name. A numeral reused for different parts in different figures isn't told apart.</p></div>
+    <div class="card stack"><h4>Embedding is slow</h4><p style="font-size:.92rem">granite takes about 50 ms per chunk on CPU, roughly 15 minutes for a 100-page document. Switch to bge-small for 10× faster ingest at a small accuracy cost.</p></div>
+    <div class="card stack"><h4>Keyword search alone gets fooled</h4><p style="font-size:.92rem">For our own example question, keyword search ranks a <em>test-log</em> row first (it contains "EV-BMS-100" as an identifier) and the answer row second. That's why the two searches are merged (B7).</p></div>
+    <div class="card stack"><h4>Some ids aren't caught</h4><p style="font-size:.92rem">"IP67" has no hyphen and no unit, so it isn't recorded as an identifier. Prose search still finds the word "IP67", and meaning search finds "ingress protection".</p></div>
+  </div>
+</section>
+
+<section id="selfcheck">
+  <div class="head"><span class="no">?</span><h2>Check yourself</h2></div>
+  <div class="qa">
+    <details><summary>What is a chunk, and why does a text chunk never cross a page?</summary><div><p>A chunk is one searchable card. Because each one belongs to one page, finding the chunk tells you the page to cite.</p></div></details>
+    <details><summary>Why are table rows separate chunks and also whole tables?</summary><div><p>A row card is small and about exactly one fact, so it ranks well for a specific question. The whole-table card helps when a question spans several rows.</p></div></details>
+    <details><summary>What does the prefix do for "Max discharge current | 320 A"?</summary><div><p>It adds "EV-BMS-100 Battery Management System › 3. Electrical Specifications › p.2", so the card can be matched by product name and section even though the row text never mentions them.</p></div></details>
+    <details><summary>Where does "160 = control unit" come from?</summary><div><p>From the patent text ("a control unit 160"), read by the numeral dictionary. Not from the drawing; OCR never sees that label.</p></div></details>
+    <details><summary>When is an OCR'd label "repaired"?</summary><div><p>Only when exactly one dictionary numeral explains it, by one missing leading digit or one commonly confused digit. "10" becomes 110 on the gripper because 110 is the only candidate.</p></div></details>
+    <details><summary>Why both keyword and meaning search?</summary><div><p>Keyword search is exact but misses paraphrases ("IP rating" vs "ingress protection"). Meaning search catches paraphrases but is weak on exact numbers and codes. The real examples in B7 show each one failing where the other succeeds.</p></div></details>
+    <details><summary>Why is the figure description generated at indexing time and not per question?</summary><div><p>It's done once per figure and cached, so questions stay fast and cheap. For visual questions, the image is still sent at answer time.</p></div></details>
+  </div>
+</section>
+
+<section id="route">
+  <div class="head"><span class="no">B11</span><h2>Now read the code, in this order</h2></div>
+  <p class="progress" id="routeProgress"></p>
+  <ul class="route-list" id="routeList"></ul>
+</section>
+
+<footer>
+  <span>Indexing Field Guide · sheet 2 of 5</span>
+  <span><a href="https://claude.ai/artifact/4naVixobZZjB1ZrokZwG8B">← sheet 1, Extraction</a> · <a href="https://claude.ai/artifact/2L6gd6ZrbxVpqHR818tBr6">next: sheet 3, Retrieval →</a></span>
+</footer>
+</div>
+
+<script>
+(function(){
+  /* real results from IndexStore.keyword_search / dense_search on data/index/hybrid.sqlite */
+  var Q=[
+    {q:"What is the maximum discharge current rating of the EV-BMS-100?",
+     kw:[["test_log.csv · row 1","structured_row",1.02,0],["EV-BMS-100 p.2 · Max discharge current row","table_row",1.00,1],["test_log.csv · row 6","structured_row",0.86,0]],
+     dn:[["EV-BMS-100 p.2 · Max discharge current row","table_row",0.94,1],["EV-BMS-100 p.2 · Max charge current row","table_row",0.92,0],["EV-BMS-100 p.2 · whole electrical table","table",0.91,1]],
+     kv:["bad","Answer is 2nd. A test-log row mentioning EV-BMS-100 wins, because the answer row's own text never says the product name."],
+     dv:["good","Answer is 1st. The meaning of 'maximum discharge current' matches the row closely."]},
+    {q:"What IP rating does the BMS enclosure have?",
+     kw:[["EV-BMS-100 p.2 · Figure 2 (enclosure)","figure",1.00,0],["EV-BMS-100 p.2 · Operating temperature row","table_row",0.74,0],["bill_of_materials · row 4","structured_row",0.73,0]],
+     dn:[["EV-BMS-100 p.2 · whole mechanical table","table",0.86,1],["EV-BMS-100 p.2 · Figure 2 (enclosure)","figure",0.85,0],["EV-BMS-100 p.2 · Ingress protection row","table_row",0.85,1]],
+     kv:["bad","Misses. The row says 'Ingress protection | IP67', and no word in it matches 'IP rating'. 'Enclosure' pulls in the figure instead."],
+     dv:["good","Finds it. The model knows 'IP rating' and 'ingress protection' mean the same thing."]},
+    {q:"How hot can the BMS operate?",
+     kw:[["Falcon-VT1 p.2 · text","text",1.00,0],["EV-BMS-100 p.1 · Figure 1","figure",0.79,0],["EV-BMS-100 p.2 · Communication protocol row","table_row",0.62,0]],
+     dn:[["EV-BMS-100 p.2 · Operating temperature range row","table_row",0.85,1],["EV-BMS-100 p.2 · whole mechanical table","table",0.83,0],["EV-BMS-100 p.2 · Enclosure dimensions row","table_row",0.83,0]],
+     kv:["bad","Misses entirely. 'Hot' and 'operate' don't appear in the answer row, and the top hit is from a different product."],
+     dv:["good","Answer is 1st. 'How hot' ≈ 'operating temperature range'."]},
+    {q:"What is labelled 160 in the gripper patent?",
+     kw:[["Gripper p.2 · claim 3 (…a control unit 160…)","claim",1.62,1],["Gripper p.1 · text (…controlled by a control unit 160)","text",1.25,1],["Gripper p.1 · FIG. 2 figure card","figure",1.00,1]],
+     dn:[["Gripper p.1 · title/patent-number text","text",0.87,0],["Gripper p.1 · FIG. 2 figure card","figure",0.84,1],["Gripper p.2 · claim 3","claim",0.84,1]],
+     kv:["good","All three hits define 160. The question's '160' became the identifier ref160 and matched exactly."],
+     dv:["bad","Top hit is the page title, which says nothing about 160. Meaning search barely registers a bare number."]}
+  ];
+  var tabs=document.getElementById("qtabs");
+  function res(host,list){host.innerHTML="";list.forEach(function(r,i){var d=document.createElement("div");d.className="res "+(r[3]?"hit":"miss");
+    var a=document.createElement("span");a.className="r";a.textContent="#"+(i+1);
+    var b=document.createElement("span");b.textContent=r[0];
+    var c=document.createElement("span");c.className="s";c.textContent=r[1]+" · "+r[2].toFixed(2);
+    d.appendChild(a);d.appendChild(b);d.appendChild(c);host.appendChild(d)})}
+  function show(i){var x=Q[i];
+    [].forEach.call(tabs.children,function(b,j){b.setAttribute("aria-pressed",j===i?"true":"false")});
+    res(document.getElementById("kwRes"),x.kw);res(document.getElementById("dnRes"),x.dn);
+    var kv=document.getElementById("kwV"),dv=document.getElementById("dnV");
+    kv.className="verdict "+x.kv[0];kv.textContent=x.kv[1];dv.className="verdict "+x.dv[0];dv.textContent=x.dv[1];}
+  Q.forEach(function(x,i){var b=document.createElement("button");b.type="button";b.textContent=x.q;b.addEventListener("click",function(){show(i)});tabs.appendChild(b)});
+  show(0);
+
+  var R=[
+    ["ae/index/ingest.py","The six stations in about 40 lines. Read ingest() first; it's your map."],
+    ["ae/index/identifiers.py","58 lines. The regular expressions for part numbers, patents, figures, values and numerals."],
+    ["ae/index/numerals.py","The dictionary: extract_numerals, then reconcile_labels (the repair step)."],
+    ["ae/index/chunker.py","chunk_document, then _emit_table and _emit_figure. Compare with the cards in B3 and B5."],
+    ["ae/index/vlm.py","The figure-description prompt (SYSTEM) and the cache."],
+    ["ae/index/store.py","The SQLite tables (_ensure), then keyword_search and dense_search."],
+    ["ae/index/embed.py","embed_texts and its cache; SPECS for model differences."],
+    ["tests/test_chunker_numerals.py","Short tests that show the expected behaviour on real documents."],
+    ["Run: uv run python plots/plot_chunks.py","Then open plots/out/chunks/index.html to see every chunk drawn on its page."],
+    ["Explore: sqlite3 data/index/hybrid.sqlite","Try: select kind, count(*) from chunks group by kind;"]
+  ];
+  var KEY="ae-guide-m2-route",st={};
+  try{st=JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch(e){st={}}
+  var ul=document.getElementById("routeList"),pr=document.getElementById("routeProgress");
+  function upd(){var n=R.filter(function(_,i){return st[i]}).length;pr.textContent=n+" of "+R.length+" done"}
+  R.forEach(function(r,i){
+    var li=document.createElement("li");if(st[i])li.className="done";
+    var cb=document.createElement("input");cb.type="checkbox";cb.id="route2-"+i;cb.checked=!!st[i];
+    var lab=document.createElement("label");lab.htmlFor=cb.id;
+    var p=document.createElement("span");p.className="path";p.textContent=(i+1)+". "+r[0];
+    var s=document.createElement("span");s.className="muted";s.style.fontSize=".9rem";s.textContent=r[1];
+    lab.appendChild(p);lab.appendChild(s);
+    cb.addEventListener("change",function(){st[i]=cb.checked;li.className=cb.checked?"done":"";try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}upd()});
+    li.appendChild(cb);li.appendChild(lab);ul.appendChild(li);
+  });
+  upd();
+})();
+</script>

@@ -1,151 +1,179 @@
-# Take-Home: Answer Engine for Engineering Documents
+# Answer engine for engineering documents
 
-The full exercise brief is included as `Take-Home_Answer_Engine_for_Engineering_Documents.pdf`.
-This README summarizes it and tells you exactly what's in this package.
-
-## Context
-
-Hardware engineering teams in robotics, aerospace, EV, and similar fields work from a messy mix
-of documents: patents, design documents full of block diagrams and spec tables, bills of
-materials, and test logs. When an engineer asks a real question, the answer is rarely in one
-clean paragraph. It may sit in a table on page 14, in a figure label, in a scanned patent page,
-or in a spreadsheet row.
-
-Your task is to build an **answer engine** that ingests such a corpus and answers
-natural-language questions with **grounded, cited answers**. Just as importantly, we want you to
-**show how good it is** through an evaluation you design and run.
-
-We've kept the scope deliberately focused. We'd rather see a small system that you understand end
-to end, measure honestly, and can reason about than a broad one held together by black boxes.
-**Please submit within 7 days.**
-
-## What we provide (this package)
+Ingests patents, design documents (PDF/DOCX), a bill of materials and a test log, and
+answers natural-language questions with cited answers, or says "not found". Everything
+except the LLM runs locally with open-source packages. The take-home brief is in
+`Take-Home_Answer_Engine_for_Engineering_Documents.pdf` (summary in `docs/brief-summary.md`).
 
 ```
-Take-Home_Answer_Engine_for_Engineering_Documents.pdf   <- the full brief (read this first)
-
-patents/                 4 patents (PDF)
-  US2988237A_programmed_article_transfer.pdf     <- scanned, image-only (no text layer) — requires OCR
-  US8485576B2_robotic_gripper.pdf                 <- two-column layout, numbered claims
-  US5481460A_ev_controller.pdf                    <- two-column layout, numbered claims
-  US20170320570A1_uav_vtol.pdf                    <- two-column layout, numbered claims
-
-design_docs/             3 design documents (PDF/DOCX)
-  EV-BMS-100_design_document.pdf                  <- block diagram, spec tables, enclosure figure
-  Falcon-VT1_flight_controller_design_document.pdf <- block diagram, spec table
-  RJA-40_actuator_design_document.docx             <- block diagram, spec table, assembly figure
-
-structured/               2 structured files
-  test_log.csv            <- hardware test log
-  bill_of_materials.xlsx  <- bill of materials
-
-dev_set/
-  questions.json          <- ~20 questions with reference answers and evidence location
-                             (document + page), spanning factual lookup, table lookup,
-                             figure-grounded, structured-data, and unanswerable questions.
-                             Use this to build and tune your system.
+make setup                       # uv venv + pinned deps
+make ingest                      # extract → structured tables → numeral index → chunks → index → embeddings → figure descriptions
+make ask Q="What is the maximum discharge current rating of the EV-BMS-100?"
+make eval                        # staged evaluation for all three extraction backends → data/eval/RESULTS.md
 ```
-
-A separate **hidden test set** of similar questions will be used to evaluate your system after
-submission; it is not included here.
-
-Patents use two-column layouts, numbered claims, and figures whose parts are labelled with
-reference numerals (e.g. "valve 112" in the text maps to the label 112 in FIG. 3). Design
-documents contain block diagrams, photos or CAD screenshots, and spec tables (electrical ratings,
-dimensions, operating limits).
-
-## Constraints
-
-**1. Models are your choice.** Any LLM, VLM, or embedding model, open-weight or hosted (via an API
-key). Tell us what you used and why. If you use a hosted model, make it configurable so we can
-plug in our own key.
-
-**2. Everything else must be open source and run locally.** Parsing, OCR, layout detection, table
-extraction, image extraction, chunking, indexing, and retrieval must be done with open-source
-packages running in your own environment.
-- Not allowed: hosted document-processing or RAG services (LlamaParse, Unstructured's hosted API,
-  AWS Textract, Azure Document Intelligence, Google Document AI, Reducto, managed vector databases).
-- Allowed: open-source libraries and the models bundled with them (e.g. Docling, Marker, PyMuPDF,
-  pdfplumber, Camelot, Tesseract, PaddleOCR, Surya, Table Transformer) and self-hosted storage
-  (e.g. Qdrant, pgvector, LanceDB, DuckDB, SQLite).
-- Grey area, clarified: you may call a general-purpose LLM/VLM inside your pipeline (e.g. to
-  describe a figure or interpret a table), but the pipeline itself — what gets extracted, how it's
-  structured, how it links back to the source page — must be yours.
-
-**3. Know your tools from the inside.** For each extraction library you rely on, be able to
-explain how it detects page layout, decides reading order (especially two-column pages), recovers
-table structure, locates and crops figures, when OCR kicks in and which engine it uses, and where
-it breaks (ideally with an example from this corpus). We'll spend a good part of the follow-up
-discussion on this.
-
-**4. Easy for us to run.** We should be able to clone your repo and run ingestion, querying, and
-evaluation with one command each (e.g. `make ingest`, `make ask Q="..."`, `make eval`). Pin your
-dependencies and document any system packages (e.g. Tesseract).
-
-## Requirements
-
-**Ingestion and extraction** — text in correct reading order (two-column patent pages should not
-interleave line by line; scanned pages go through OCR); tables with row/column structure intact;
-figures extracted, linked to their caption, and made findable; the CSV/XLSX ingested so they can
-be queried precisely (e.g. with SQL); every extracted piece carries its source document and page.
-
-**Retrieval and answering** — any retrieval approach (keyword, vector, hybrid, page-image based,
-SQL, or a mix), explained briefly; every answer cites document and page; when the corpus doesn't
-contain the answer, say "not found" instead of guessing; a CLI or minimal HTTP API is enough; make
-output machine-readable for automatic scoring, in this shape:
 
 ```json
-{
-  "answer": "The rated continuous current is 120 A.",
-  "citations": [{"doc": "motor_controller_design.pdf", "page": 7}],
-  "not_found": false
-}
+{"answer": "The EV-BMS-100 max discharge current is 320 A continuous, 450 A for 10 s.",
+ "citations": [{"doc": "EV-BMS-100_design_document.pdf", "page": 2}],
+ "not_found": false}
 ```
 
-**Question types** your system should handle: factual lookup from text, table lookup,
-figure-grounded, structured data (CSV/XLSX), and unanswerable questions.
+## Setup
 
-## Evaluation
+System packages: [uv](https://docs.astral.sh/uv/), Tesseract 5 (`brew install tesseract`),
+LibreOffice (`brew install --cask libreoffice`; only needed for DOCX page numbers — without
+it DOCX blocks are reported on page 1 and the output says so). Python 3.12 is pinned via
+`.python-version`; `make setup` creates the environment from `uv.lock`.
 
-Build a harness that runs with one command and measures quality **at each stage**, so when an
-answer is wrong you can tell whether extraction, retrieval, or generation caused it.
+Hosted model: put `ANTHROPIC_API_KEY=...` in a `.env` file (searched from the working
+directory upward). Models are configurable: `AE_ANSWER_MODEL` (default `claude-sonnet-5-5`),
+`AE_VLM_MODEL` (default `claude-haiku-4-5-20251001`, used once per figure at ingest),
+`AE_EMBED_MODEL` (default `ibm-granite/granite-embedding-english-r2`, local), `AE_BACKEND`
+(default `hybrid`). `make ingest` without a key skips the figure descriptions and still works.
+First runs download the Docling layout/table models and the embedding model from Hugging Face.
 
-- **Extraction quality** — you can't measure this against the dev set alone, so create a small
-  gold set yourself: hand-annotate a handful of pages covering a couple of tables, a figure, and
-  the scanned page. Report metrics you can defend (OCR character/word error rate, cell-level table
-  accuracy, figure-to-caption linking).
-- **Retrieval quality** — Recall@k against the gold evidence pages in the dev set, broken down by
-  question type.
-- **Answer quality** — correctness (with a stated tolerance for numbers; explain how you judged
-  free-text answers), citation accuracy, and "not found" behavior (how often it correctly declines
-  vs. wrongly declines on answerable ones).
-- **Failure analysis** — a short table of failures, each with the question, what went wrong, and
-  which stage caused it. Summarize all results in one table in your README.
+`make ingest-all` builds the three indexes `make eval` compares; `make test` runs the unit
+tests (structured loading, numeral index, chunker, routing). The EasyOCR ablation needs
+`uv sync --group ablation` and `AE_DOCLING_OCR=easyocr`.
 
-## Deliverables
+## Architecture
 
-1. **Git repository** with code and one-command setup for ingestion, querying, and evaluation.
-2. **README** covering architecture overview, model/library choices and why, evaluation results
-   table and failure analysis, known limitations, and what you'd do next with more time.
-3. **"How extraction works"** (roughly a page, in the repo): for text, tables, images, and OCR,
-   what your chosen library does under the hood, why you picked it over alternatives, and one case
-   where it fails on this corpus and what you did or would do about it.
-4. **A short note on AI coding tools** — using them is allowed and expected; tell us how you used
-   them.
+```
+raw files
+  PDF  ─► thin: PyMuPDF text/images + pdfplumber grids + Tesseract OCR (per page, when needed)
+       ─► docling: layout model + TableFormer + OCR
+       ─► hybrid: thin everywhere; Docling's tables/figures merged in on OCR'd pages   ◄── default
+  DOCX ─► python-docx (exact tables, images, captions) + LibreOffice render for page numbers
+  CSV/XLSX ─► typed SQLite tables (+ one text line per row for search)
+            │ ParsedDocument: pages → ordered text / table / figure blocks, each with doc, page, bbox
+            ▼
+  numeral index ("control unit 160" from the specification text; figure defs; OCR label reconciliation)
+  chunker: text (≤300 tok, one section, one page) · claim · table_row + table · figure (caption + labels + glossary + VLM description) · structured_row
+            ▼
+  SQLite: chunks · FTS5 (stemmed prose | exact identifiers | trigram) · embeddings · structured tables · numerals
+            ▼
+  question ─► parse (doc / figure / numeral / aggregate patterns)
+           ├─ numeral route: index lookup                ─┐
+           ├─ sql route: text-to-SQL, read-only, 1 retry ─┼─► evidence (short ids e1..en, mapped to doc/page by us)
+           └─ hybrid retrieval (always): BM25 ∪ dense → RRF k=60 → page scoring → top pages + neighbours ─┘
+            ▼
+  Claude answers from evidence only (figure crop attached for visual questions) → JSON
+            ▼
+  verify: citations ⊆ supplied ids · named-document scope · every number in the answer appears in cited text · overlap warning
+          any hard failure → not_found
+```
 
-## How we'll assess
+Module map: `ae/extract/` (thin/, docling_backend.py, pagemap.py, structured.py, base.py),
+`ae/index/` (numerals, chunker, identifiers, store, embed, vlm, ingest), `ae/retrieve/`
+(query, hybrid, sql), `ae/answer/` (generate, verify, pipeline), `ae/eval/` (extraction,
+omnidocbench, retrieval, answers, report), `gold/` (hand-annotated extraction gold set and
+adversarial unanswerable questions), `docs/extraction.md` (how extraction works),
+`docs/ai-tools.md`.
 
-Rigor and honesty of the evaluation; hidden test set results (especially tables, figures, and
-correct "not found" answers); your understanding of your extraction stack; engineering quality;
-and judgment about what you chose not to build.
+## Choices and why
 
-## Follow-up discussion
+| Choice | Why (evidence in `docs/extraction.md` and the research notes behind each module docstring) |
+|---|---|
+| Three extraction backends behind one schema | The brief grades understanding of the parser; `thin` is fully explainable, Docling is the strongest open layout model. Measuring both decided the default rather than guessing. |
+| `hybrid` as default | On this corpus thin and Docling tie end-to-end; on scanned pages thin's text is cleaner (CER 0.13 % vs 21.8 %) while Docling finds tables and figures from pixels (TEDS 0.53 vs 0, 36/50 vs 0/50 figures). Hybrid takes each where it measured best. |
+| PyMuPDF + pdfplumber + Tesseract | Exact glyphs, bboxes, ruled-table grids, column-aware OCR; each small enough to explain line by line. |
+| Numeral index from text, OCR/VLM only confirm | Published figure-label OCR tops out around F1 0.71; patent specifications define every numeral. |
+| Row + whole-table chunks, deterministic prefixes | Row boundaries and title prefixes have the only consistent measured gains in chunking studies; LLM-generated chunk context did not replicate reliably. |
+| BM25 ∪ dense, RRF k=60, identifier column | Exact ids drive these questions; embedders are near chance on numbers. Dense adds paraphrase recall (it alone gets every table question). |
+| granite-embedding-english-r2 | Apache licence, no prefixes, best table-retrieval score among base-size models; bge-small kept as the fast fallback (10× cheaper, ~1 question worse at R@3). |
+| Claude Sonnet for answers/SQL, Haiku for figure descriptions | Image input needed for figures; descriptions are cached once per figure. |
+| SQLite for everything | FTS5, blobs, structured tables and the numeral index in one file per backend; brute-force cosine is fine to ~100k chunks. |
+| Rule router, hybrid always runs | A rule/TF-IDF router beat embedding classifiers in routing benchmarks; running retrieval alongside means a wrong route cannot fail silently. |
+| Abstention = gates + deterministic checks | Models answer 40–99 % of unsupported questions when merely told to abstain; citation subset, document scope and number-grounding checks are what catch the rest. |
 
-A 60–90 minute session where you walk us through your repo, results, and failure analysis; we go
-deep on how your parser, table extraction, OCR, and image extraction work internally; and we add a
-new document or question type together to see how your system and evaluation hold up.
+## Results
 
-## Questions
+All numbers from `make eval` (`data/eval/RESULTS.md` has every breakdown and ablation).
+The dev set has 20 answerable + 2 unanswerable questions; the adversarial set adds 30
+unanswerable questions (`gold/unanswerable.json`); the extraction gold set is in `gold/`;
+the external slice is 106 English double-column OmniDocBench pages (images, so all
+backends run their OCR path there).
 
-Email us if anything is unclear. If you'd rather not wait, make a reasonable assumption and write
-it down in your README; that's completely fine.
+| Metric | thin | docling | hybrid |
+|---|---|---|---|
+| Extraction: OCR CER / WER (scanned patent page) | 0.0013 / 0.0080 | 0.2182 / 0.2122 | 0.0013 / 0.0080 |
+| Extraction: table cell accuracy (4 tables, 117 cells) | 0.983 | 0.966 | 0.983 |
+| Extraction: figures found / caption linked (9) | 9/9 / 9/9 | 9/9 / 3/9 | 9/9 / 9/9 |
+| Extraction: figure label recall, Tesseract / VLM | 0.39 / 0.96 | 0.10 / 0.95 | 0.39 / 1.00 |
+| Extraction: reading order pair accuracy (3 two-column pages) | 0.903 | 0.942 | 0.903 |
+| OmniDocBench (106 scanned pages): text similarity | 0.749 | 0.837 | 0.733 |
+| OmniDocBench: reading order pair accuracy | 0.948 | 0.979 | 0.940 |
+| OmniDocBench: table TEDS (19 tables) | 0.00 | 0.534 | 0.534 |
+| OmniDocBench: figure recall @ IoU 0.5 (50 figures) | 0.00 | 0.72 | 0.72 |
+| Retrieval: page Recall@1 / @5, BM25 only | 0.60 / 0.90 | 0.60 / 0.95 | 0.60 / 0.90 |
+| Retrieval: page Recall@1 / @5, dense only | 0.75 / 0.95 | 0.80 / 1.00 | 0.75 / 0.95 |
+| Retrieval: page Recall@1 / @5, hybrid | 0.75 / 0.90 | 0.75 / 0.95 | 0.75 / 0.90 |
+| Answers: correct (20 answerable; numbers within 1 % + LLM grader + read by hand) | 20/20 | 20/20 | 20/20 |
+| Answers: cited page in gold evidence | 18/20 | 18/20 | 18/20 |
+| Answers: citation precision | 0.775 | 0.775 | 0.775 |
+| Answers: wrong declines on answerable | 0 | 0 | 0 |
+| Not-found: handled correctly (2 dev + 30 adversarial) | 32/32 | 32/32 | 32/32 |
+| Penalty score (+1 correct / 0 declined / −2 wrong) | 20 of 20 | 20 of 20 | 20 of 20 |
+
+Retrieval by question type (hybrid backend, hybrid retrieval): factual 5/5, table 7/7,
+figure 3/4, structured 4/4 at R@5; dense alone scores 0.25 on figure questions and BM25
+alone 0.75, which is why figure questions also go through the numeral index. With 20
+questions a difference of one question is 5 points; the backend differences in retrieval
+are within that noise.
+
+### Failure analysis
+
+| Question | What went wrong | Stage |
+|---|---|---|
+| q02 "what component reduces the transfer head's traverse rate" | Correct answer; cited page 1 of the scanned patent, dev set cites page 2. The sentence and claim 1 are on page 1; page 2 holds claims 4+. | citation (gold label) |
+| q07 "IP rating of the EV-BMS-100 enclosure" | Correct answer (IP67); cited page 2, dev set cites page 3. The mechanical table renders on page 2. | citation (gold label) |
+| q12 "rated and peak torque of the RJA-40" (passes only via policy) | LibreOffice renders rows 1–4 of the spec table on page 1, the dev set cites page 2 (Word keeps the table with its heading). We cite every page a split table spans. | DOCX pagination |
+| q16 "how many M12 ports in Figure 2" (passes only via policy) | The figure is on page 2, its caption on page 3; the dev set cites the caption's page. We cite both. | cross-page caption |
+| Falcon-VT1 "Processor" row (extraction gold, 2 of 30 cells) | The PDF overprints "MHz" and "with" at the same coordinates; every parser splits it the same way. | extraction (corpus defect) |
+| Figure numerals via Tesseract (recall 0.39) | Leader lines touching a "1" turn 100/110/120 into 00/10/20; the gripper's "160" lies outside the embedded image entirely. Repaired by reconciliation against the text where unique; the VLM description reads 0.96. | extraction |
+| Docling captions (3 of 9) | Docling attaches the title it OCRs *inside* the picture as the caption; the real caption stays loose text. | extraction (docling) |
+| Docling OCR on the scanned page (CER 0.22) | Docling emits the header-area blocks twice. Same with its default EasyOCR engine (CER 0.23, `AE_DOCLING_OCR=easyocr`), so it is overlapping layout regions, not the OCR driver. | extraction (docling) |
+| Thin backend on OmniDocBench scans | No tables (needs ruling lines) and no figure boxes at IoU 0.5 (caption-driven boxes are approximate). | extraction (thin), fixed by hybrid |
+| Citation precision 0.775 | Extra cited pages are the split-table / caption-page policy above and multi-page support (UAV battery answer draws on page 1 text and page 2 claim 3). | policy |
+
+Assumptions written down because they differ from the dev set: the three gold-label
+page differences above; `page` for CSV/XLSX is 1; a figure's citation includes its caption
+page; a split table's citation includes every page it spans.
+
+### External corpus (real documents)
+
+To find gaps the synthetic corpus cannot show, 11 real files (two Google Patents grants, a
+Microchip datasheet, a NASA paper, an arXiv paper, 12 ICDAR 2013 table pages, two scanned
+NASA reports, a CubeSat DOCX procedure, an open-hardware BOM, the UCI SECOM test log) were
+sourced with 52 hand-written questions (`gold/external_questions.json`, `make external`).
+Final score on the default backend: 40/44 answerable correct, 42/44 cited pages, 8/8
+unanswerable declined; the first pass scored 33/44, and the ten gaps fixed in between
+(span-joined numbers, spreadsheet headers, multi-sheet ids, mixed-type columns, wide
+schemas, totals rows, DOCX page mapping/headings/captions, verifier strictness) are listed
+with the four still open in `docs/external-eval.md`.
+
+## Known limitations
+
+- Scanned tables are found only through Docling (hybrid/docling backends); thin has no pixel-based table detector.
+- Thin's figure boxes on scans are caption-driven (one figure per caption, one column); uncaptioned drawings are invisible to it.
+- The text-quality gate is a token heuristic; a plausible-looking but wrong text layer passes it.
+- The numeral index is regex-based: lists with shared names ("left and right wings 14, 16") get the whole phrase; numerals reused across figures are not disambiguated by figure.
+- DOCX pagination follows LibreOffice; Word may break pages differently.
+- granite-r2 embeds ~50 ms per chunk on an M-series CPU (≈15 min for a 100-page document); set `AE_EMBED_MODEL=BAAI/bge-small-en-v1.5` for 10× faster ingest.
+- Docling runs ~3 s/page on CPU (5–6 s on large scans); only OCR'd pages pay it in the hybrid backend.
+- The eval is small: 20 answerable questions, so one question is 5 points; the adversarial set was written by us.
+- No reranker, no page-image retrieval, no LLM-generated chunk context: all considered, measured as low-value for this corpus in the literature, left behind flags or out.
+- From the external corpus: superscripts lost in OCR text layers; numbers that exist only inside figures; prose outranked by many short table rows in table-heavy documents (see `docs/external-eval.md`).
+
+## With more time
+
+1. Find why Docling duplicates header-area regions on the scanned patent (it is not the OCR engine: EasyOCR gives the same result) and whether a layout post-processing option fixes it; the EasyOCR run on the 106 OmniDocBench pages was not repeated.
+2. Pixel-based figure finder for thin on scans (connected components of non-text ink).
+3. Add distractor documents and re-measure Recall@k; tune the retrieval gate threshold on a larger unanswerable set with confidence intervals.
+4. Cross-encoder reranker ablation (flag exists in the design, not wired).
+5. Full-corpus-in-prompt baseline to keep retrieval numbers honest on small corpora.
+6. Hidden-test readiness: a `--full` mode that attaches every figure of the named document for visual questions.
+
+## AI coding tools
+
+See `docs/ai-tools.md`.

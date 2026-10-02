@@ -7,19 +7,27 @@ from ae.index.chunker import chunk_document, structured_chunks
 from ae.index.numerals import NumeralIndex, reconcile_labels
 from ae.schema import ParsedDocument
 
-EXTRACTED = Path(__file__).resolve().parents[1] / "data" / "extracted" / "thin"
-pytestmark = pytest.mark.skipif(not EXTRACTED.exists(), reason="run `make extract` first")
+ROOT = Path(__file__).resolve().parents[1]
+CORPUS = sorted((ROOT / "patents").glob("*.pdf")) + sorted((ROOT / "design_docs").glob("*"))
+_DOCS: dict[str, ParsedDocument] = {}
 
 
 def load(name: str) -> ParsedDocument:
-    return ParsedDocument.model_validate_json((EXTRACTED / f"{name}.json").read_text())
+    """Parse through the thin backend's page cache (fast after `make ingest`, correct before it)."""
+    if name not in _DOCS:
+        from ae.extract.base import parse
+
+        path = next(p for p in CORPUS if p.stem == name)
+        _DOCS[name] = parse(path, backend="thin")
+    return _DOCS[name]
 
 
 @pytest.fixture(scope="module")
 def idx() -> NumeralIndex:
     i = NumeralIndex()
-    for f in EXTRACTED.glob("*.json"):
-        i.add_document(load(f.stem))
+    for p in CORPUS:
+        if p.suffix.lower() in (".pdf", ".docx"):
+            i.add_document(load(p.stem))
     return i
 
 

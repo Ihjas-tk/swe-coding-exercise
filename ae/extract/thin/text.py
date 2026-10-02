@@ -37,7 +37,7 @@ FULL_WIDTH_FRAC = 0.62  # block wider than this fraction of text area => spans c
 MIN_GUTTER = 12.0  # points; smaller x-gaps between blocks are not column gutters
 MERGE_GAP = 3.0  # points; consecutive blocks closer than this (same size) are one paragraph
 HEADER_FRAC = 0.12  # top/bottom fraction of page height treated as running header/footer (patent headers sit at ~10%)
-CAPTION_RE = re.compile(r"^\s*(FIG(?:URE)?\.?|Figure|Table)\s*\d+[A-Za-z]?\s*([—–:\-]|\.?\s*$)", re.I)
+CAPTION_RE = re.compile(r"^\s*(FIG(?:URE)?\.?|Figure|Table)\s*\d+[A-Za-z]?\s*([—–:\-]|\.(?=\s+[A-Z])|\.?\s*$)", re.I)  # "FIG. 2 —", "Figure 6. Text", bare "FIG. 2"
 FIG_TITLE_RE = re.compile(r"^\s*(FIG(?:URE)?\.?|Figure)\s*\d+[A-Za-z]?\.?\s*$", re.I)  # bare "FIG. 2" above a drawing
 HEADING_RE = re.compile(r"^\s*(\d+(\.\d+)*\.?\s+\S|[A-Z][A-Z \-&/]{5,}$)")
 
@@ -61,12 +61,35 @@ def raw_blocks_from_page(page: pymupdf.Page) -> list[RawBlock]:
         spans = [s for l in b["lines"] for s in l["spans"] if s["text"].strip()]
         if not spans:
             continue
-        lines = [" ".join(s["text"] for s in l["spans"]).strip() for l in b["lines"]]
+        lines = [_join_spans(l["spans"]).strip() for l in b["lines"]]
         text = _join_lines([l for l in lines if l])
         sizes = [s["size"] for s in spans]
         bold = sum(1 for s in spans if "bold" in s["font"].lower() or s["flags"] & 16) > len(spans) / 2
         x0, y0, x1, y1 = b["bbox"]
         out.append(RawBlock(BBox(x0=x0, y0=y0, x1=x1, y1=y1), text, statistics.median(sizes), bold))
+    return out
+
+
+def _join_spans(spans: list[dict]) -> str:
+    """Concatenate a line's spans without inventing spaces.
+
+    MuPDF starts a new span at every font change, so "0.45" set with a different font for
+    the period arrives as three spans; joining them with " " produced "0 .45" (seen on an
+    IEEE table). A space is inserted only when the spans are physically separated by more
+    than 0.25 em and neither side already carries whitespace.
+    """
+    out = ""
+    prev = None
+    for sp in spans:
+        t = sp["text"]
+        if not t:
+            continue
+        if prev is not None:
+            gap = sp["bbox"][0] - prev["bbox"][2]
+            if gap > 0.25 * max(sp["size"], 1.0) and not out.endswith(" ") and not t.startswith(" "):
+                out += " "
+        out += t
+        prev = sp
     return out
 
 

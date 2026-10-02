@@ -1,0 +1,93 @@
+{
+ "root": "data/external/evalset",
+ "files": [
+  {
+   "path": "patents/US9577240B2_battery_module_busbar.pdf",
+   "url": "https://patentimages.storage.googleapis.com/49/a4/55/0c391aabc27abb/US9577240.pdf",
+   "licence": "US patent, public record",
+   "sha256": "17468ecb7d56ce2003968d252052f40c5537f9fe4d18ed8e4d352a838175d9c7",
+   "bytes": 1265226
+  },
+  {
+   "path": "patents/US8485576B2_robotic_gripper_real.pdf",
+   "url": "https://patentimages.storage.googleapis.com/c6/7c/af/a80484d485f9ae/US8485576.pdf",
+   "licence": "US patent, public record",
+   "sha256": "fe563032f1395d180b423a7180fea557ea61853c611dc0d80bc4d3c64ec786d7",
+   "bytes": 934419
+  },
+  {
+   "path": "design_docs/MCP73831_datasheet.pdf",
+   "url": "https://ww1.microchip.com/downloads/en/DeviceDoc/MCP73831-Family-Data-Sheet-DS20001984H.pdf",
+   "licence": "Microchip datasheet: free download, not redistributed here",
+   "sha256": "75297f2a5235599368381adfb63df2652cc22d757f171f388147b2ab3d32776f",
+   "bytes": 889186
+  },
+  {
+   "path": "design_docs/NASA_X57_power_command_system.pdf",
+   "url": "https://ntrs.nasa.gov/api/citations/20170005797/downloads/20170005797.pdf",
+   "licence": "NASA NTRS, public domain",
+   "sha256": "8f0c6564d1888c4f6178935d38bfa74c723e51c727c2ac262021fed91b71ed39",
+   "bytes": 1460782
+  },
+  {
+   "path": "papers/arxiv_2106.01110_tactile_pinching.pdf",
+   "url": "https://arxiv.org/pdf/2106.01110v2",
+   "licence": "arXiv, CC BY 4.0",
+   "sha256": "588ad6c39b5820ecbc2517fd2ea7e3dea1e9c1f315a4f7416586ff75101552a7",
+   "bytes": 7245934
+  },
+  {
+   "path": "scanned/NASA_1965_telemetry_test_system.pdf",
+   "url": "https://ntrs.nasa.gov/api/citations/19650014708/downloads/19650014708.pdf",
+   "licence": "NASA NTRS, public domain",
+   "sha256": "2fd487f676c57144d2adde8c36f3ecf1e633dcef338007e20b04d346886b9f17",
+   "bytes": 922090
+  },
+  {
+   "path": "scanned/NASA_TN_D3411_1966.pdf",
+   "url": "https://ntrs.nasa.gov/api/citations/19660023723/downloads/19660023723.pdf",
+   "licence": "NASA NTRS, public domain",
+   "sha256": "01aa81e59d7eeb44b7df4bfd512301c8875a86a68c97c20727ca887f0bf470be",
+   "bytes": 1268579
+  },
+  {
+   "path": "docx/BIRDS5_EM_thermal_vacuum_test_procedure.docx",
+   "url": "https://raw.githubusercontent.com/BIRDSOpenSource/BIRDS5-Procedures_Reports/main/EM%20Test%20Reports/EM%20Thermal%20Vacuum%20Test/BIRDS-5_EM_Thermal_Vacuum_Test_Procedure_v3.docx",
+   "licence": "BIRDS open source, MIT",
+   "sha256": "72c7439496a23e50c4e22563e528ddf2a6b4da905774cc430aaceb14dd566f03",
+   "bytes": 2196794
+  },
+  {
+   "path": "structured/OLSK_3d_printer_bom.xlsx",
+   "url": "https://raw.githubusercontent.com/Open-Lab-Starter-Kit/OLSK-Small-3D-Printer/main/OLSK_Small_3D_Printer_V2/BOM/OLSK_Small_3D_Printer_V2_BOM.xlsx",
+   "licence": "CERN-OHL-W-2.0",
+   "sha256": "3f70ff1accdebb7ffe886727d1a55997555086ca9717e3690cf6f6816ebe1f4f",
+   "bytes": 82845
+  },
+  {
+   "path": "structured/uci_secom_test_log.csv",
+   "url": "https://raw.githubusercontent.com/Eason0227/Semiconductor-Manufacturing-Procees-Prediction/main/uci-secom.csv",
+   "licence": "UCI SECOM, CC BY 4.0",
+   "sha256": "e8b8187ce276db148707b5103463aa0f35cb8e521da2bc697c0fd45a6b06ad0f",
+   "bytes": 6055583
+  }
+ ],
+ "icdar2013": {
+  "zip": "https://web.archive.org/web/20170416122623id_/http://tamirhassan.com/files/icdar2013-competition-dataset-with-gt.zip",
+  "selected": [
+   "icdar2013_eu-002.pdf",
+   "icdar2013_eu-003.pdf",
+   "icdar2013_eu-005.pdf",
+   "icdar2013_eu-008.pdf",
+   "icdar2013_eu-010.pdf",
+   "icdar2013_eu-018.pdf",
+   "icdar2013_us-003.pdf",
+   "icdar2013_us-004.pdf",
+   "icdar2013_us-005.pdf",
+   "icdar2013_us-009.pdf",
+   "icdar2013_us-012.pdf",
+   "icdar2013_us-026.pdf"
+  ],
+  "note": "unzip to data/external/icdar2013_raw and copy the selected PDFs to data/external/evalset/icdar2013/ as icdar2013_<id>.pdf"
+ }
+}

@@ -210,7 +210,7 @@ def _emit_figure(f: FigureBlock, page: Page, doc: ParsedDocument, numerals: Nume
         parts.append("Text in figure: " + " ".join(dict.fromkeys(words)))
     if f.description:
         parts.append(f"VLM description: {f.description}")
-    emit(page.number, "figure", " | ".join(parts), f.bbox, {"figure_id": f.figure_id, "image_path": f.image_path, "labels": labels_meta})
+    emit(page.number, "figure", " | ".join(parts), f.bbox, {"figure_id": f.figure_id, "image_path": f.image_path, "labels": labels_meta, "caption_page": f.caption_page, "has_vlm": bool(f.description)})
 
 
 def _merge_small(chunks: list[Chunk]) -> list[Chunk]:
@@ -231,6 +231,6 @@ def structured_chunks(db_path: Path) -> list[Chunk]:
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     out = []
     for doc, tbl, row, text in conn.execute("SELECT doc, tbl, row, text FROM _structured_rows ORDER BY doc, row"):
-        out.append(Chunk(id=f"{doc}#p1#row{row}", doc=doc, page=1, kind="structured_row", text=text, prefix=f"{doc} › {tbl} › row {row}", identifiers=extract_identifiers(text), meta={"table": tbl, "row": row}))
+        out.append(Chunk(id=f"{doc}#{tbl}#row{row}", doc=doc, page=1, kind="structured_row", text=text, prefix=f"{doc} › {tbl} › row {row}", identifiers=extract_identifiers(text), meta={"table": tbl, "row": row}))
     conn.close()
     return out

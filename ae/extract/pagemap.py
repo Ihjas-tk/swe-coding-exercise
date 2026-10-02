@@ -21,6 +21,9 @@ from pathlib import Path
 import pymupdf
 
 from ae.extract.cache import CACHE_ROOT, file_hash
+from ae.log import get_logger, timed
+
+log = get_logger(__name__)
 from ae.schema import BBox, TableBlock
 
 SOFFICE_CANDIDATES = ["soffice", "libreoffice", "/Applications/LibreOffice.app/Contents/MacOS/soffice"]
@@ -38,18 +41,21 @@ def render_to_pdf(path: Path) -> Path | None:
     """Render a DOCX to PDF with LibreOffice; cached by file hash. None if unavailable."""
     soffice = find_soffice()
     if not soffice:
+        log.warning(f"LibreOffice not found: {path.name} will be reported on page 1 (install it for DOCX page numbers)")
         return None
     out_dir = CACHE_ROOT / "render" / f"{path.stem}_{file_hash(path)}"
     pdf = out_dir / f"{path.stem}.pdf"
     if pdf.exists():
         return pdf
     out_dir.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
+    log.info(f"rendering {path.name} with LibreOffice for page numbers")
+    with timed("extract.docx_render", path.name):
+      subprocess.run(
         [soffice, "--headless", "--convert-to", "pdf", "--outdir", str(out_dir), str(path)],
         check=True,
         capture_output=True,
         timeout=180,
-    )
+      )
     return pdf if pdf.exists() else None
 
 
@@ -101,7 +107,10 @@ def tables_by_page(rows: list[list[str]], locator: PageLocator | None, title: st
     located: list[tuple[int, BBox | None]] = []
     page = fallback[0]
     for r in body:
-        hit = locator.locate_text(next((c for c in r if c), "")) if any(r) else None
+        # Locate by the longest cell (>= 12 chars): first cells are often row numbers, which
+        # match anywhere. Rows with no distinctive cell inherit the previous row's page.
+        needle = max((c for c in r if c), key=len, default="")
+        hit = locator.locate_text(needle) if len(needle) >= 12 else None
         if hit:
             page = hit[0]
         located.append((page, hit[1] if hit else None))

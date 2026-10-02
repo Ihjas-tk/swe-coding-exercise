@@ -19,6 +19,9 @@ from pathlib import Path
 import numpy as np
 
 from ae.index.store import IndexStore
+from ae.log import get_logger, timed
+
+log = get_logger(__name__)
 
 DEFAULT_MODEL = "ibm-granite/granite-embedding-english-r2"
 CACHE_DB = Path("data/cache/embeddings.sqlite")
@@ -84,7 +87,7 @@ class EmbeddingCache:
         self.conn.commit()
 
 
-def embed_texts(texts: list[str], model: str = DEFAULT_MODEL, kind: str = "passage", batch_size: int = 32, log=None) -> np.ndarray:
+def embed_texts(texts: list[str], model: str = DEFAULT_MODEL, kind: str = "passage", batch_size: int = 32) -> np.ndarray:
     """Embed passages or queries (kind in {"passage", "query"}) with caching."""
     sp = spec_for(model)
     prefix = sp.query_prefix if kind == "query" else sp.passage_prefix
@@ -93,8 +96,7 @@ def embed_texts(texts: list[str], model: str = DEFAULT_MODEL, kind: str = "passa
     have = cache.get_many(model, inputs)
     todo = [t for t in inputs if cache.key(t) not in have]
     if todo:
-        if log:
-            log(f"embedding {len(todo)} new texts with {model} ({len(have)} cached)")
+        log.info(f"embedding {len(todo)} new texts with {model} ({len(have)} cached)")
         vecs = _model(model).encode(todo, batch_size=batch_size, normalize_embeddings=True, show_progress_bar=False, convert_to_numpy=True)
         cache.put_many(model, todo, vecs)
         have.update({cache.key(t): np.asarray(vecs[i], dtype=np.float32) for i, t in enumerate(todo)})
@@ -109,6 +111,15 @@ def embed_chunks(store: IndexStore, model: str = DEFAULT_MODEL, log=None) -> int
     chunks = store.all_chunks()
     if not chunks:
         return 0
-    vecs = embed_texts([c.full_text for c in chunks], model, kind="passage", log=log)
-    store.add_embeddings(model, [c.id for c in chunks], vecs)
-    return len(chunks)
+    with timed("embed.model_load", model=model):
+        _model(model)
+    by_doc: dict[str, list] = {}
+    for c in chunks:
+        by_doc.setdefault(c.doc, []).append(c)
+    total = 0
+    for doc, cs in by_doc.items():
+        with timed("embed", doc, chunks=len(cs)):
+            vecs = embed_texts([c.full_text for c in cs], model, kind="passage")
+            store.add_embeddings(model, [c.id for c in cs], vecs)
+        total += len(cs)
+    return total

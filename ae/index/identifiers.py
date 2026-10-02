@@ -44,7 +44,10 @@ def extract_identifiers(text: str, known_numerals: set[str] | None = None) -> li
     for m in VALUE_UNIT_RE.finditer(text):
         add(norm(m.group(1) + m.group(2)), f"{m.group(1)} {m.group(2)}".lower())
     if known_numerals:
-        for m in NUMERAL_TOKEN_RE.finditer(text):
+        # digits glued to a hyphenated identifier ("EV-BMS-100") or a unit are not reference numerals
+        masked = PART_RE.sub(" ", text)
+        masked = VALUE_UNIT_RE.sub(" ", masked)
+        for m in NUMERAL_TOKEN_RE.finditer(masked):
             if m.group(1) in known_numerals:
                 add("ref" + m.group(1))
     return out
@@ -52,4 +55,5 @@ def extract_identifiers(text: str, known_numerals: set[str] | None = None) -> li
 
 def numbers_in(text: str) -> set[str]:
     """All numeric tokens (for answer verification): '320', '450', '4.25', '101:1' -> parts."""
-    return {t.replace(",", "") for t in re.findall(r"\d+(?:[.,]\d+)?", text)}
+    toks = re.findall(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?", text)
+    return {t.replace(",", "") for t in toks}

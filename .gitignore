@@ -227,3 +227,6 @@ data/index/
 # local review plots (not part of the submission)
 plots/
 data/
+docs/data/external/
+data/logs/
+data/smoke/

@@ -1,0 +1,205 @@
+[
+ {
+  "id": "u01",
+  "category": "property_not_stated",
+  "question": "What is the warranty period for the EV-BMS-100?",
+  "twin": "q07"
+ },
+ {
+  "id": "u02",
+  "category": "property_not_stated",
+  "question": "What is the maximum flight altitude of a UAV equipped with the Falcon-VT1 flight controller?",
+  "twin": "q10"
+ },
+ {
+  "id": "u03",
+  "category": "property_not_stated",
+  "question": "What is the MTBF (mean time between failures) of the RJA-40 actuator?",
+  "twin": "q11"
+ },
+ {
+  "id": "u04",
+  "category": "property_not_stated",
+  "question": "What is the unit price of the EV-BMS-100 in the design document?",
+  "twin": "q06"
+ },
+ {
+  "id": "u05",
+  "category": "property_not_stated",
+  "question": "What is the storage temperature range of the EV-BMS-100?",
+  "twin": "q10",
+  "note": "only the operating range is given"
+ },
+ {
+  "id": "u06",
+  "category": "property_not_stated",
+  "question": "What is the Falcon-VT1's maximum input current?",
+  "twin": "q09",
+  "note": "input voltage range and per-channel currents are given, not input current"
+ },
+ {
+  "id": "u07",
+  "category": "numeral_not_in_patent",
+  "question": "What component is labelled 204 in FIG. 2 of US8,485,576 B2?",
+  "twin": "q13"
+ },
+ {
+  "id": "u08",
+  "category": "numeral_from_other_patent",
+  "question": "What component is labelled 38 in FIG. 2 of US8,485,576 B2?",
+  "twin": "q13",
+  "note": "38 is a battery in the UAV patent, undefined in the gripper patent"
+ },
+ {
+  "id": "u09",
+  "category": "numeral_from_other_patent",
+  "question": "What is component 160 in FIG. 3 of US2017/0320570A1?",
+  "twin": "q15",
+  "note": "160 is the gripper patent's control unit"
+ },
+ {
+  "id": "u10",
+  "category": "figure_not_in_document",
+  "question": "What does FIG. 7 of US2,988,237 show?",
+  "twin": "q14",
+  "note": "only FIGS. 1-3 are described"
+ },
+ {
+  "id": "u11",
+  "category": "figure_not_in_document",
+  "question": "How many connector ports are shown in Figure 3 of the EV-BMS-100 design document?",
+  "twin": "q16",
+  "note": "there is no Figure 3"
+ },
+ {
+  "id": "u12",
+  "category": "wrong_document",
+  "question": "What is the backlash specification of the EV-BMS-100?",
+  "twin": "q11",
+  "note": "backlash is an RJA-40 spec"
+ },
+ {
+  "id": "u13",
+  "category": "wrong_document",
+  "question": "What is the peak current per ESC channel of the RJA-40 actuator?",
+  "twin": "q09",
+  "note": "ESC channels belong to the Falcon-VT1"
+ },
+ {
+  "id": "u14",
+  "category": "wrong_document",
+  "question": "According to US5,481,460, what recharges the vehicle's battery wirelessly?",
+  "twin": "q05",
+  "note": "wireless recharging is in the UAV patent"
+ },
+ {
+  "id": "u15",
+  "category": "false_premise",
+  "question": "Why does the EV-BMS-100 enclosure have six M12 connector ports?",
+  "twin": "q16",
+  "note": "it has four"
+ },
+ {
+  "id": "u16",
+  "category": "false_premise",
+  "question": "What is the fourth battery of the UAV in US2017/0320570A1 used for?",
+  "twin": "q04",
+  "note": "it has three batteries"
+ },
+ {
+  "id": "u17",
+  "category": "false_premise",
+  "question": "Which two microprocessors monitor the run-away state in US5,481,460?",
+  "twin": "q03",
+  "note": "three or more, not two"
+ },
+ {
+  "id": "u18",
+  "category": "structured_not_present",
+  "question": "How many test runs were performed by operator K. Tanaka?",
+  "twin": "q17",
+  "note": "no such operator; a correct SQL answer is zero rows -> not found or 0",
+  "accept_zero": true
+ },
+ {
+  "id": "u19",
+  "category": "structured_not_present",
+  "question": "What is the lead time in weeks for part RJA-GEAR-101 in the bill of materials?",
+  "twin": "q19",
+  "note": "no lead-time column"
+ },
+ {
+  "id": "u20",
+  "category": "structured_not_present",
+  "question": "How many test runs failed in September 2026?",
+  "twin": "q17",
+  "note": "log covers July-August 2026; correct answer is 0 / not found",
+  "accept_zero": true
+ },
+ {
+  "id": "u21",
+  "category": "document_not_in_corpus",
+  "question": "What is the rated current of the motor controller in motor_controller_design.pdf?",
+  "twin": "q06"
+ },
+ {
+  "id": "u22",
+  "category": "document_not_in_corpus",
+  "question": "In US9,000,001, what material is the gripper housing made of?",
+  "twin": "q01"
+ },
+ {
+  "id": "u23",
+  "category": "modality",
+  "question": "What colour is the enclosure shown in Figure 2 of the EV-BMS-100 design document?",
+  "twin": "q16",
+  "note": "modality probe: the text never states a colour; a decline is correct, and an answer is also correct if it cites the figure page (read from the image).",
+  "accept_visual": true
+ },
+ {
+  "id": "u24",
+  "category": "property_not_stated",
+  "question": "What is the cycle life in charge cycles of the EV-BMS-100 pack?",
+  "twin": "q06"
+ },
+ {
+  "id": "u25",
+  "category": "property_not_stated",
+  "question": "What CAN bus speed does the Falcon-VT1 use?",
+  "twin": "q08",
+  "note": "CAN speed is stated for the BMS, not the Falcon"
+ },
+ {
+  "id": "u26",
+  "category": "property_not_stated",
+  "question": "What is the gear ratio of the gripper in US8,485,576 B2?",
+  "twin": "q12",
+  "note": "gear ratio is an RJA-40 spec"
+ },
+ {
+  "id": "u27",
+  "category": "property_not_stated",
+  "question": "What is the weight of the article transfer head in US2,988,237?",
+  "twin": "q02"
+ },
+ {
+  "id": "u28",
+  "category": "numeral_not_in_patent",
+  "question": "What component is labelled 99 in FIG. 1 of US5,481,460?",
+  "twin": "q13"
+ },
+ {
+  "id": "u29",
+  "category": "wrong_document",
+  "question": "What ingress protection rating does the Falcon-VT1 board have?",
+  "twin": "q07",
+  "note": "IP ratings are given for the BMS and RJA-40 only"
+ },
+ {
+  "id": "u30",
+  "category": "property_not_stated",
+  "question": "Who is the inventor of US8,485,576 B2?",
+  "twin": "q01",
+  "note": "inventor of record redacted for this exercise"
+ }
+]

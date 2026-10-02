@@ -36,9 +36,13 @@ import re
 from pathlib import Path
 
 from ae.extract.cache import PageCache
+from ae.log import get_logger, timed
 from ae.schema import BBox, FigureBlock, Page, ParsedDocument, TableBlock, TextBlock
 
-VERSION = "3"
+import os
+
+OCR_ENGINE = os.environ.get("AE_DOCLING_OCR", "tesseract")  # tesseract | easyocr (ablation)
+VERSION = "3-" + OCR_ENGINE
 FIG_DIR = Path("data/extracted/docling/figures")
 FIG_ID_RE = re.compile(r"^\s*(FIG(?:URE)?\.?|Figure)\s*(\d+[A-Za-z]?)", re.I)
 
@@ -49,12 +53,14 @@ def _get_converter():
     global _converter
     if _converter is None:
         from docling.datamodel.base_models import InputFormat
-        from docling.datamodel.pipeline_options import PdfPipelineOptions, TesseractCliOcrOptions
+        from docling.datamodel.pipeline_options import EasyOcrOptions, PdfPipelineOptions, TesseractCliOcrOptions
         from docling.document_converter import DocumentConverter, PdfFormatOption
 
         opts = PdfPipelineOptions()
         opts.do_ocr = True
-        opts.ocr_options = TesseractCliOcrOptions(lang=["eng"])
+        # Tesseract CLI by default so both backends share one OCR engine; EasyOCR (Docling's own
+        # default) is the ablation that tests whether region duplication is driver-specific.
+        opts.ocr_options = EasyOcrOptions(lang=["en"]) if OCR_ENGINE == "easyocr" else TesseractCliOcrOptions(lang=["eng"])
         opts.do_table_structure = True
         opts.table_structure_options.do_cell_matching = True
         opts.generate_picture_images = True
@@ -93,7 +99,8 @@ def parse_pdf(path: Path, use_cache: bool = True) -> ParsedDocument:
         pages = [cache.get(i + 1) for i in range(n_pages)]
         return ParsedDocument(doc=path.name, source_path=str(path), backend="docling", pages=pages)  # type: ignore[arg-type]
 
-    result = _get_converter().convert(str(path))
+    with timed("extract.docling_convert", path.name):
+        result = _get_converter().convert(str(path))
     doc = result.document
     from ae.extract.thin.ocr import needs_ocr
 
@@ -197,7 +204,8 @@ def parse_docx(path: Path, use_cache: bool = True) -> ParsedDocument:
     from ae.extract.pagemap import PageLocator, render_to_pdf, tables_by_page
 
     path = Path(path)
-    doc = DocumentConverter().convert(str(path)).document
+    with timed("extract.docling_convert", path.name):
+        doc = DocumentConverter().convert(str(path)).document
     pdf = render_to_pdf(path)
     locator = PageLocator(pdf) if pdf else None
     y = 72.0

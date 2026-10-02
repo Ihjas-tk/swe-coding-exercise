@@ -1,0 +1,626 @@
+<title>Retrieval Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sheet 3 of the drafting set. Same tokens as sheets 1–2; the running example is the "320 A" question, now followed from the moment it is asked to the pages handed to Claude. */
+:root{
+  --paper:#F2F5F4; --card:#FFFFFF; --ink:#14202B; --muted:#56636E; --rule:#D3DADD; --grid:rgba(20,32,43,.045);
+  --redline:#C8341B; --redline-soft:rgba(200,52,27,.09);
+  --lib:#17708F; --lib-soft:rgba(23,112,143,.11);
+  --ours:#3A50C8; --ours-soft:rgba(58,80,200,.10);
+  --ok:#2F7D4A; --ok-soft:rgba(47,125,74,.10);
+  --warn:#A86B00; --warn-soft:rgba(168,107,0,.11);
+  --violet:#7A3FB0; --violet-soft:rgba(122,63,176,.10);
+  --display:"Archivo",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0E151B; --card:#141E26; --ink:#E2E8EB; --muted:#98A6B0; --rule:#26343E; --grid:rgba(226,232,235,.035);
+  --redline:#FF6E52; --redline-soft:rgba(255,110,82,.13);
+  --lib:#55B8D6; --lib-soft:rgba(85,184,214,.13);
+  --ours:#93A5FF; --ours-soft:rgba(147,165,255,.13);
+  --ok:#5CC384; --ok-soft:rgba(92,195,132,.12);
+  --warn:#E3A93B; --warn-soft:rgba(227,169,59,.13);
+  --violet:#C59BFF; --violet-soft:rgba(197,155,255,.13); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E151B; --card:#141E26; --ink:#E2E8EB; --muted:#98A6B0; --rule:#26343E; --grid:rgba(226,232,235,.035);
+  --redline:#FF6E52; --redline-soft:rgba(255,110,82,.13);
+  --lib:#55B8D6; --lib-soft:rgba(85,184,214,.13);
+  --ours:#93A5FF; --ours-soft:rgba(147,165,255,.13);
+  --ok:#5CC384; --ok-soft:rgba(92,195,132,.12);
+  --warn:#E3A93B; --warn-soft:rgba(227,169,59,.13);
+  --violet:#C59BFF; --violet-soft:rgba(197,155,255,.13); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.65;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:20px;padding-block:28px 80px}
+h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.18}
+h1{font-size:clamp(2rem,5vw,3rem);font-weight:780;font-variation-settings:"wdth" 82}
+h2{font-size:clamp(1.45rem,3vw,1.8rem);font-weight:720;font-variation-settings:"wdth" 86}
+h3{font-size:1.15rem;font-weight:680;font-variation-settings:"wdth" 92}
+h4{font-size:1rem;font-weight:650}
+p{margin:0}
+a{color:var(--ours)}
+.prose{max-width:66ch}
+.big{font-size:1.08rem}
+code,.mono{font-family:var(--mono);font-size:.85em}
+code{background:var(--ours-soft);padding:.05em .35em;border-radius:3px;overflow-wrap:anywhere}
+.muted{color:var(--muted)}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+:focus-visible{outline:2px solid var(--redline);outline-offset:2px}
+.stack{display:grid;gap:12px}
+.card{background:var(--card);border:1px solid var(--rule);padding:18px 20px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.scroll-x{overflow-x:auto}
+
+.titleblock{display:grid;grid-template-columns:1fr auto;border:1.5px solid var(--ink);background:var(--card)}
+.tb-main{padding:22px 24px;display:grid;gap:10px;border-right:1.5px solid var(--ink);min-width:0}
+.tb-meta{display:grid;grid-template-columns:auto auto;font-family:var(--mono);font-size:.75rem;align-content:start}
+.tb-meta div{padding:8px 12px;border-bottom:1px solid var(--rule)}
+.tb-meta div:nth-child(odd){color:var(--muted);border-right:1px solid var(--rule)}
+.tb-meta div:nth-last-child(-n+2){border-bottom:0}
+@media (max-width:720px){.titleblock{grid-template-columns:1fr}.tb-main{border-right:0;border-bottom:1.5px solid var(--ink)}}
+
+nav.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--rule);margin-inline:-20px;padding:8px 20px;display:flex;gap:4px 16px;flex-wrap:wrap;font-family:var(--mono);font-size:.74rem}
+nav.toc a{color:var(--muted);text-decoration:none}
+nav.toc a:hover{color:var(--ink)}
+
+section{margin-top:60px;display:grid;gap:18px}
+.part{margin-top:72px;border-top:3px double var(--ink);padding-top:14px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.part .eyebrow{color:var(--redline)}
+.head{display:flex;gap:14px;align-items:baseline;border-bottom:1.5px solid var(--ink);padding-bottom:8px}
+.no{font-family:var(--mono);font-size:.78rem;color:var(--redline);border:1.5px solid var(--redline);border-radius:50%;width:2.3em;height:2.3em;display:grid;place-items:center;flex:none}
+
+.analogy{border-left:3px solid var(--lib);background:var(--lib-soft);padding:10px 14px}
+.analogy b,.why b,.note b{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;margin-right:6px}
+.analogy b{color:var(--lib)}
+.why{border-left:3px solid var(--redline);background:var(--redline-soft);padding:10px 14px}
+.why b{color:var(--redline)}
+.note{border-left:3px solid var(--warn);background:var(--warn-soft);padding:10px 14px}
+.note b{color:var(--warn)}
+
+details.code{border:1px dashed var(--rule);background:var(--card);padding:10px 14px}
+details.code summary{cursor:pointer;font-family:var(--mono);font-size:.78rem;color:var(--ours)}
+details.code>div{margin-top:10px;display:grid;gap:8px;font-size:.92rem}
+.fn{font-family:var(--mono);font-size:.78rem;background:var(--ours-soft);color:var(--ours);padding:1px 7px;border-radius:2px;white-space:nowrap}
+
+.journey{display:grid;grid-template-columns:repeat(5,1fr);gap:0}
+.journey div{background:var(--card);border:1.5px solid var(--rule);padding:10px 12px;font-size:.85rem;min-width:0}
+.journey div+div{border-left:0}
+.journey .done{color:var(--muted)}
+.journey .on{border-color:var(--redline);box-shadow:inset 0 0 0 1px var(--redline)}
+.journey b{display:block;font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+.journey .on b{color:var(--redline)}
+@media (max-width:640px){.journey{grid-template-columns:1fr}.journey div+div{border-left:1.5px solid var(--rule);border-top:0}}
+
+.inout{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch}
+.inout .box{background:var(--card);border:1.5px solid var(--ink);padding:14px 16px;display:grid;gap:6px;align-content:start;min-width:0}
+.inout .arr{display:grid;place-items:center;font-family:var(--mono);color:var(--muted)}
+@media (max-width:720px){.inout{grid-template-columns:1fr}.inout .arr{transform:rotate(90deg);height:20px}}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0;border:1px solid var(--rule);background:var(--card);margin:0}
+.gloss div{padding:12px 14px;border-bottom:1px solid var(--rule);border-right:1px solid var(--rule)}
+.gloss dt{font-family:var(--mono);font-size:.82rem;font-weight:500;color:var(--ours)}
+.gloss dd{margin:2px 0 0;font-size:.9rem}
+
+/* router diagram */
+.flow svg{width:100%;height:auto;display:block}
+.flow{background:var(--card);border:1px solid var(--rule);padding:12px}
+
+/* route table */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font:inherit;font-family:var(--mono);font-size:.76rem;padding:4px 10px;background:var(--card);color:var(--ink);border:1.5px solid var(--rule);cursor:pointer}
+.chips button[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+table.t{border-collapse:collapse;width:100%;font-size:.88rem}
+table.t th,table.t td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--rule)}
+table.t th{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;border-bottom:1.5px solid var(--ink)}
+table.t td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+table.t tr:last-child td{border-bottom:0}
+.rt{font-family:var(--mono);font-size:.72rem;padding:1px 7px;border-radius:2px;white-space:nowrap}
+.rt.hybrid{background:var(--ours-soft);color:var(--ours)}
+.rt.sql{background:var(--lib-soft);color:var(--lib)}
+.rt.numeral{background:var(--violet-soft);color:var(--violet)}
+.sig{font-family:var(--mono);font-size:.7rem;color:var(--muted);display:block}
+
+/* evidence boxes */
+.evid{background:var(--card);border:1.5px solid var(--ink);padding:14px 16px;font-family:var(--mono);font-size:.78rem;line-height:1.65;overflow-wrap:anywhere}
+.sqlbox{background:var(--card);border:1px solid var(--rule);display:grid}
+.sqlbox>div{padding:10px 14px;border-bottom:1px solid var(--rule);font-size:.9rem;min-width:0}
+.sqlbox>div:last-child{border-bottom:0}
+.sqlbox pre{margin:0;font-family:var(--mono);font-size:.78rem;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--lib)}
+.sqlbox .lbl{font-family:var(--mono);font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:block}
+
+/* steps */
+.steps{display:grid;gap:0;counter-reset:st}
+.stp{display:grid;grid-template-columns:44px minmax(0,1fr);gap:0 14px;position:relative}
+.stp::before{content:"";position:absolute;left:16px;top:0;bottom:0;border-left:1.5px solid var(--rule)}
+.stp:first-child::before{top:26px}.stp:last-child::before{bottom:calc(100% - 26px)}
+.stp .dot{counter-increment:st;width:32px;height:32px;border:1.5px solid var(--ink);background:var(--card);border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-size:.78rem;z-index:1;margin-top:10px}
+.stp .dot::before{content:counter(st)}
+.stp .body{padding:10px 0 22px;display:grid;gap:10px;min-width:0}
+
+/* ranked lists */
+.lists{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.lists{grid-template-columns:1fr}}
+.rl{background:var(--card);border:1px solid var(--rule);padding:10px 12px;display:grid;gap:4px;align-content:start;min-width:0}
+.rl .it{display:grid;grid-template-columns:30px minmax(0,1fr);gap:6px;font-size:.84rem;padding:3px 6px;border:1px solid transparent}
+.rl .it .r{font-family:var(--mono);font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.rl .it.ans{border-color:var(--ok);background:var(--ok-soft)}
+.rl .gap{font-family:var(--mono);font-size:.72rem;color:var(--muted);padding-left:36px}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:640px){.calc{grid-template-columns:1fr}}
+.calc label{display:grid;gap:4px;font-size:.88rem}
+.calc input[type=range]{width:100%;accent-color:var(--redline)}
+.calc .out{font-family:var(--mono);font-size:.84rem;line-height:1.8;background:var(--card);border:1.5px solid var(--ink);padding:12px 14px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.calc .out b{color:var(--redline);font-size:1.05rem}
+
+/* page score bars */
+.pbars{display:grid;gap:10px}
+.pb{display:grid;grid-template-columns:150px minmax(0,1fr) 70px;gap:10px;align-items:center;font-size:.84rem}
+.pb .track{height:18px;border:1px solid var(--rule);background:var(--grid);display:flex;overflow:hidden}
+.pb .track span{height:100%}
+.pb .v{font-family:var(--mono);font-size:.76rem;font-variant-numeric:tabular-nums;text-align:right}
+.pb .name{overflow-wrap:anywhere}
+@media (max-width:560px){.pb{grid-template-columns:1fr 60px}.pb .track{grid-column:1/-1;grid-row:2}}
+.plegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-family:var(--mono);font-size:.72rem}
+.plegend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}
+
+.recall td.best{color:var(--ok);font-weight:600}
+
+.qa{border:1px solid var(--rule);background:var(--card)}
+.qa details{border-bottom:1px solid var(--rule);padding:12px 16px}
+.qa details:last-child{border-bottom:0}
+.qa summary{cursor:pointer;font-weight:600}
+.qa details>div{margin-top:8px;font-size:.93rem;display:grid;gap:6px}
+
+.route-list{list-style:none;margin:0;padding:0;border:1px solid var(--rule);background:var(--card)}
+.route-list li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;padding:11px 14px;border-bottom:1px solid var(--rule)}
+.route-list li:last-child{border-bottom:0}
+.route-list input{margin-top:5px;width:16px;height:16px;accent-color:var(--redline)}
+.route-list label{display:grid;gap:2px;cursor:pointer;min-width:0}
+.route-list .path{font-family:var(--mono);font-size:.82rem;overflow-wrap:anywhere}
+.route-list li.done .path{text-decoration:line-through;color:var(--muted)}
+.progress{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+
+footer{margin-top:64px;border-top:1.5px solid var(--ink);padding-top:12px;font-family:var(--mono);font-size:.74rem;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+</style>
+
+<div class="wrap">
+
+<header class="titleblock">
+  <div class="tb-main">
+    <span class="eyebrow">swe-coding-exercise · field guide · sheet 3</span>
+    <h1>Retrieval Field Guide</h1>
+    <p class="prose big">A question has just arrived. This sheet follows what happens next: the code reads the question, decides where to look, runs searches, merges what they find, and hands Claude a small stack of the most likely pages. Claude never sees the whole corpus, only this stack.</p>
+    <p class="prose muted">Every number on this page is real output from running the repo on its own dev questions. Earlier sheets: <a href="https://claude.ai/artifact/4naVixobZZjB1ZrokZwG8B">1 Extraction</a> · <a href="https://claude.ai/artifact/TrsBj8Q31uuChAbjUTWZNa">2 Indexing</a>.</p>
+  </div>
+  <div class="tb-meta">
+    <div>SHEET</div><div>3 of 5</div>
+    <div>MODULE</div><div>Retrieval</div>
+    <div>FOLDER</div><div>ae/retrieve/</div>
+    <div>SIZE</div><div>≈240 lines</div>
+    <div>EXAMPLE</div><div>the 320 A question</div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#where">A1 where we are</a>
+  <a href="#words">A2 words</a>
+  <a href="#map">B1 three routes</a>
+  <a href="#parse">B2 reading the question</a>
+  <a href="#numeral">B3 dictionary route</a>
+  <a href="#sql">B4 SQL route</a>
+  <a href="#hybrid">B5 search route</a>
+  <a href="#works">B6 does it work?</a>
+  <a href="#decisions">B7 decisions</a>
+  <a href="#limits">B8 limits</a>
+  <a href="#route">B9 read the code</a>
+</nav>
+
+<!-- ================================================================ PART A -->
+<div class="part"><span class="eyebrow">Part A</span><h2>From a question to a stack of pages</h2></div>
+
+<section id="where">
+  <div class="head"><span class="no">A1</span><h2>Where we are</h2></div>
+  <div class="journey">
+    <div class="done"><b>STEP 1 ✓</b>Extraction</div>
+    <div class="done"><b>STEP 2 ✓</b>Indexing</div>
+    <div class="on"><b>STEP 3 · this sheet</b>Retrieval</div>
+    <div><b>STEP 4</b>Answering</div>
+    <div><b>STEP 5</b>Evaluation</div>
+  </div>
+  <div class="inout">
+    <div class="box"><span class="eyebrow">comes in</span><p>A question in plain English, plus the index built in sheet 2 (229 chunks, two kinds of search, the part-number dictionary, and the spreadsheet tables).</p><p class="mono" style="font-size:.8rem">"What is the maximum discharge current rating of the EV-BMS-100?"</p></div>
+    <div class="arr" aria-hidden="true">→</div>
+    <div class="box"><span class="eyebrow">goes out</span><p>An <b>evidence bundle</b> for step 4: up to <b>8 pages</b>, each carrying up to 10 of its chunks, best first. Plus, when relevant, <b>SQL result rows</b> or a <b>dictionary definition</b>.</p><p class="mono" style="font-size:.8rem">#1 EV-BMS-100 page 2 → [Max discharge current row, whole table, …]</p></div>
+  </div>
+  <div class="analogy"><b>Library analogy</b>A librarian takes your question, decides whether it needs the encyclopaedia, the parts catalogue or a quick look-up in the glossary, checks both card catalogues, and brings back the eight most promising pages, open and bookmarked.</div>
+</section>
+
+<section id="words">
+  <div class="head"><span class="no">A2</span><h2>New words for this sheet</h2></div>
+  <dl class="gloss">
+    <div><dt>route</dt><dd>Which way a question is handled: <b>numeral</b> (dictionary lookup), <b>sql</b> (database query) or <b>hybrid</b> (search). Search always runs, whatever the route.</dd></div>
+    <div><dt>rank</dt><dd>A result's position in a list: 1st, 2nd, 13th… The merging step uses ranks, not raw scores.</dd></div>
+    <div><dt>RRF</dt><dd>Reciprocal Rank Fusion: a simple way to merge two ranked lists. Each list gives a chunk 1 ÷ (60 + its rank) points, and the points are added.</dd></div>
+    <div><dt>page score</dt><dd>How promising a whole page is: its best chunk, plus a little credit for other good chunks on it.</dd></div>
+    <div><dt>hard filter / soft boost</dt><dd>A hard filter searches <em>only</em> one document. A soft boost just nudges that document up the list.</dd></div>
+    <div><dt>alias</dt><dd>Other names a document is known by: its patent number in several spellings, or the product code (EV-BMS-100).</dd></div>
+    <div><dt>text-to-SQL</dt><dd>Claude turns a question into a database query, which the code then runs on the spreadsheet tables.</dd></div>
+    <div><dt>Recall@k</dt><dd>How often the correct page is somewhere in the top k pages. Recall@5 = 0.9 means the right page was in the top 5 for 90% of questions.</dd></div>
+  </dl>
+</section>
+
+<!-- ================================================================ PART B -->
+<div class="part"><span class="eyebrow">Part B</span><h2>Step 3, Retrieval, slowly</h2></div>
+
+<section id="map">
+  <div class="head"><span class="no">B1</span><h2>Three routes, and a safety net</h2></div>
+  <p class="prose">Different questions need different tools. "How many tests failed?" needs counting, so a database. "What is labelled 160?" needs the patent dictionary from sheet 2. Most questions need search. The code picks a route with simple rules, and <b>always runs search as well</b>, so a wrong route can't lose the answer.</p>
+  <div class="flow"><svg viewBox="0 0 760 300" role="img" aria-label="Question goes to parse; parse picks numeral, SQL or search; search always runs; all feed the evidence bundle">
+    <rect x="10" y="125" width="130" height="50" fill="var(--card)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="75" y="148" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="IBM Plex Sans, sans-serif" font-weight="600">question</text>
+    <text x="75" y="165" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">plain English</text>
+    <line x1="140" y1="150" x2="180" y2="150" stroke="var(--ink)" stroke-width="1.5"/>
+    <rect x="180" y="115" width="150" height="70" fill="var(--card)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="255" y="143" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="IBM Plex Sans, sans-serif" font-weight="600">read the question</text>
+    <text x="255" y="161" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">rules, no AI</text>
+    <text x="255" y="175" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">query.py</text>
+    <path d="M330 135 C 360 135, 360 45, 390 45" fill="none" stroke="var(--violet)" stroke-width="1.5" stroke-dasharray="5 3"/>
+    <path d="M330 150 L 390 150" fill="none" stroke="var(--ours)" stroke-width="2"/>
+    <path d="M330 165 C 360 165, 360 255, 390 255" fill="none" stroke="var(--lib)" stroke-width="1.5" stroke-dasharray="5 3"/>
+    <text x="345" y="80" font-size="9.5" fill="var(--violet)" font-family="JetBrains Mono, monospace">if "labelled 160"</text>
+    <text x="341" y="231" font-size="9.5" fill="var(--lib)" font-family="JetBrains Mono, monospace">if "how many…</text>
+    <text x="341" y="243" font-size="9.5" fill="var(--lib)" font-family="JetBrains Mono, monospace">failed tests"</text>
+    <text x="342" y="143" font-size="9.5" fill="var(--ours)" font-family="JetBrains Mono, monospace">always</text>
+    <rect x="390" y="20" width="170" height="50" fill="var(--violet-soft)" stroke="var(--violet)"/>
+    <text x="475" y="42" text-anchor="middle" font-size="12.5" fill="var(--violet)" font-family="IBM Plex Sans, sans-serif" font-weight="600">dictionary lookup</text>
+    <text x="475" y="59" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">B3 · numeral route</text>
+    <rect x="390" y="120" width="170" height="60" fill="var(--ours-soft)" stroke="var(--ours)" stroke-width="1.5"/>
+    <text x="475" y="144" text-anchor="middle" font-size="12.5" fill="var(--ours)" font-family="IBM Plex Sans, sans-serif" font-weight="600">search both ways</text>
+    <text x="475" y="160" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">merge → score pages</text>
+    <text x="475" y="173" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">B5 · runs every time</text>
+    <rect x="390" y="230" width="170" height="50" fill="var(--lib-soft)" stroke="var(--lib)"/>
+    <text x="475" y="252" text-anchor="middle" font-size="12.5" fill="var(--lib)" font-family="IBM Plex Sans, sans-serif" font-weight="600">database query</text>
+    <text x="475" y="269" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">B4 · sql route</text>
+    <path d="M560 45 C 590 45, 590 135, 620 135" fill="none" stroke="var(--violet)" stroke-width="1.5"/>
+    <path d="M560 150 L 620 150" fill="none" stroke="var(--ours)" stroke-width="2"/>
+    <path d="M560 255 C 590 255, 590 165, 620 165" fill="none" stroke="var(--lib)" stroke-width="1.5"/>
+    <rect x="620" y="110" width="130" height="80" fill="var(--card)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="685" y="140" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="IBM Plex Sans, sans-serif" font-weight="600">evidence</text>
+    <text x="685" y="157" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">≤ 8 pages</text>
+    <text x="685" y="171" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">+ rows / definition</text>
+    <text x="685" y="208" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">→ step 4</text>
+  </svg></div>
+  <div class="why"><b>Why rules, not an AI router</b>The question parser is a set of regular expressions, not a model. The research notes found simple rule or TF-IDF routers beat embedding classifiers on routing benchmarks. Rules are also instant, free, and easy to explain. Because search always runs alongside, a rule that misfires costs little.</div>
+</section>
+
+<section id="parse">
+  <div class="head"><span class="no">B2</span><h2>Reading the question</h2></div>
+  <p class="prose">Before any searching, the code scans the question for six kinds of clue. None of this uses AI.</p>
+  <div class="grid3">
+    <div class="card stack"><h4>1 · Identifiers</h4><p style="font-size:.9rem">Exact codes, using the same rules as sheet 2: "EV-BMS-100" → <code>ev-bms-100</code>, "US8,485,576 B2" → <code>us8485576b2</code>, "160" → <code>ref160</code> (only if 160 is in the dictionary).</p></div>
+    <div class="card stack"><h4>2 · Which document?</h4><p style="font-size:.9rem">A <b>patent number</b> names exactly one document, so search is <b>restricted to it</b> (hard filter). A <b>product name</b> like EV-BMS-100 also appears in test-log and parts-list rows, so it only gets a <b>small boost</b> (soft).</p></div>
+    <div class="card stack"><h4>3 · A figure?</h4><p style="font-size:.9rem">"FIG. 2", "Figure 3" → remembered, so the answer can cite the figure's page.</p></div>
+    <div class="card stack"><h4>4 · A part number?</h4><p style="font-size:.9rem">"labelled 160", "component 18", "112 in FIG. 2" → if that number is in the dictionary, choose the <b>numeral</b> route.</p></div>
+    <div class="card stack"><h4>5 · Counting + spreadsheet words?</h4><p style="font-size:.9rem">A counting word ("how many", "highest", "total", "distinct"…) <b>and</b> a spreadsheet word ("test log", "failed", "unit cost", "BOM"…) → choose the <b>sql</b> route. Both are required.</p></div>
+    <div class="card stack"><h4>6 · Is it visual?</h4><p style="font-size:.9rem">"how many … shown in Figure 2", "where is", "colour" → flag it, so step 4 attaches the figure <em>image</em> for Claude to look at.</p></div>
+  </div>
+  <p class="prose">Here's what those rules decided for all 22 dev-set questions. Click a route to filter.</p>
+  <div class="chips" role="group" aria-label="Filter by route" id="routeChips"></div>
+  <div class="card scroll-x" style="padding:4px 10px">
+    <table class="t" id="routeTable"><thead><tr><th>id</th><th>question</th><th>route</th><th>clues found</th></tr></thead><tbody></tbody></table>
+  </div>
+  <div class="grid2">
+    <div class="note"><b>Notice q20</b>"What is the extended cost of the FVT-ESC-40A line item?" has no counting word, so it isn't sent to SQL. Search still finds the parts-list row through the exact identifier FVT-ESC-40A. This is the safety net working.</div>
+    <div class="note"><b>Notice q09 / q10</b>"Falcon-VT1" isn't recognised as a product code: the pattern expects capitals before the hyphen. So there's no boost, but search still finds the right page from the other words.</div>
+  </div>
+  <details class="code"><summary>▸ In the code</summary><div>
+    <p><code>ae/retrieve/query.py</code> → <span class="fn">parse_query</span> returns a <code>ParsedQuery</code> holding: identifiers, <code>doc</code> (hard filter), <code>doc_boost</code> (soft), <code>fig_id</code>, <code>numerals</code>, <code>route</code>, <code>visual</code>, and <code>reasons</code> (a human-readable log of why).</p>
+    <p>The rules are the regular expressions at the top: <code>NUMERAL_Q_RE</code>, <code>NUMERAL_Q2_RE</code>, <code>AGG_RE</code> (counting words), <code>STRUCT_VOCAB</code> (spreadsheet words), <code>VISUAL_RE</code>.</p>
+    <p><span class="fn">doc_aliases</span> builds each document's alternative names from its file name, patent-number spellings, and product codes found on page 1. For the gripper patent: <code>us8485576b2</code>, <code>us8485576</code>, <code>8485576</code>, <code>gripper</code>, …</p>
+    <p>Run <code>make ask Q="…" DEBUG=1</code> to see the route and reasons for any question. Tests: <code>tests/test_routing.py</code>.</p>
+  </div></details>
+</section>
+
+<section id="numeral">
+  <div class="head"><span class="no">B3</span><h2>Route 1: the dictionary lookup</h2></div>
+  <p class="prose">For <em>"What component is labelled 160 in FIG. 2 of US8,485,576 B2?"</em> the parser found a patent number (search only the gripper patent), a figure (FIG. 2), and a known numeral (160). So it looks 160 up in the dictionary from sheet 2 and writes a plain-English note that goes into the evidence. This is the real note:</p>
+  <div class="evid">Reference numeral 160 in US8485576B2_robotic_gripper.pdf is defined in the specification as: <b>control unit</b>. Defined on page(s) 1, 2. FIG. 2 is described as: perspective cross section of an apparatus of the present invention and a pin locking mechanism … in an unlocked configuration (page 1). <span style="color:var(--warn)">(label 160 was not read on the FIG. 2 image; the definition comes from the specification text)</span></div>
+  <div class="grid2">
+    <div class="why"><b>Why say "not read on the image"</b>Honesty about evidence strength. The definition is certain; whether 160 is actually visible in FIG. 2 isn't confirmed. Claude sees that caveat and can word the answer accordingly.</div>
+    <div class="card stack" style="font-size:.92rem"><h4>When the number is ambiguous</h4><p>If no document is named and two patents both define the same numeral, the note says so: "defined in several documents… the question must name the document". Claude then asks for clarification or declines instead of guessing.</p></div>
+  </div>
+  <details class="code"><summary>▸ In the code</summary><div>
+    <p>This route lives in <code>ae/answer/pipeline.py</code>, not in <code>ae/retrieve/</code>: <span class="fn">Engine._numeral_lookup</span> and <span class="fn">_numeral_seen_in_figure</span>, which checks the figure chunk's confirmed labels from sheet 2's repair step.</p>
+  </div></details>
+</section>
+
+<section id="sql">
+  <div class="head"><span class="no">B4</span><h2>Route 2: asking the database</h2></div>
+  <p class="prose">Counting questions go to the spreadsheet tables loaded in sheet 1. Claude is shown a description of the tables (column names, types and sample values) and asked to write <b>one SELECT query</b>. The code runs it read-only and puts the result rows into the evidence. Three real examples:</p>
+  <div class="grid3">
+    <div class="sqlbox">
+      <div><span class="lbl">question · q17</span>How many test runs failed in the test log?</div>
+      <div><span class="lbl">Claude wrote</span><pre>SELECT COUNT(*) AS failed_tests
+FROM test_log
+WHERE result = 'FAIL'</pre></div>
+      <div><span class="lbl">result</span><b>7</b> <span class="muted">· from test_log.csv</span></div>
+    </div>
+    <div class="sqlbox">
+      <div><span class="lbl">question · q18</span>How many distinct EV-BMS-100 units were tested?</div>
+      <div><span class="lbl">Claude wrote</span><pre>SELECT COUNT(DISTINCT unit_sn)
+FROM test_log
+WHERE unit_type = 'EV-BMS-100'</pre></div>
+      <div><span class="lbl">result</span><b>18</b> <span class="muted">· from test_log.csv</span></div>
+    </div>
+    <div class="sqlbox">
+      <div><span class="lbl">question · q19</span>Which part has the highest unit cost?</div>
+      <div><span class="lbl">Claude wrote</span><pre>SELECT part_number, unit_cost_usd
+FROM bill_of_materials
+WHERE part_number IS NOT NULL
+ORDER BY unit_cost_usd DESC LIMIT 1</pre></div>
+      <div><span class="lbl">result</span><b>RJA-GEAR-101 · 315.75</b> <span class="muted">· from bill_of_materials.xlsx</span></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card stack" style="font-size:.92rem">
+      <h4>What Claude is shown (excerpt)</h4>
+      <pre style="margin:0;font-family:var(--mono);font-size:.74rem;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted)">TABLE "test_log" -- source file: test_log.csv, 109 rows
+  "unit_type" TEXT -- 3 distinct; values: EV-BMS-100, Falcon-VT1, RJA-40
+  "result" TEXT -- 2 distinct; values: FAIL, PASS
+  ...</pre>
+      <p>Listing the exact allowed values ("FAIL", not "failed") is what lets Claude write <code>result = 'FAIL'</code> correctly the first time.</p>
+    </div>
+    <div class="stack">
+      <div class="why"><b>Safety</b>The query runs on a <b>read-only</b> connection. Only a single SELECT is allowed, words like DELETE or DROP are rejected, and a time limit stops runaway queries. If the query errors, Claude gets the error message and one chance to fix it.</div>
+      <div class="note"><b>The "IS NOT NULL" detail</b>Spreadsheets often have total or subtotal rows with a blank label. The prompt tells Claude to exclude them for "which item is largest" questions, which is why q19's query has <code>WHERE part_number IS NOT NULL</code>.</div>
+    </div>
+  </div>
+  <details class="code"><summary>▸ In the code</summary><div>
+    <p><code>ae/retrieve/sql.py</code> (46 lines) → <span class="fn">answer_sql</span>: builds the prompt from <span class="fn">describe_schema</span>, calls Claude through <code>ae/llm.py</code> (responses cached in <code>data/cache/llm.sqlite</code>), runs <span class="fn">query_sql</span>, and retries once on error. The safety checks themselves are in <code>ae/extract/structured.py</code> → <span class="fn">query_sql</span> (sheet 1).</p>
+    <p>If the SQL route fails completely, <code>pipeline.py</code> catches it and the question is answered from search results alone.</p>
+  </div></details>
+</section>
+
+<section id="hybrid">
+  <div class="head"><span class="no">B5</span><h2>Route 3: search, merge, pick pages</h2></div>
+  <p class="prose">This runs for every question. We'll follow the running example, <em>"What is the maximum discharge current rating of the EV-BMS-100?"</em>, through its five steps with the real numbers.</p>
+  <div class="steps">
+
+    <div class="stp"><span class="dot"></span><div class="body">
+      <h3>Run both searches, top 50 each</h3>
+      <p style="font-size:.93rem">The two searches from sheet 2, each returning its 50 best chunks. Green is the chunk holding the answer.</p>
+      <div class="lists">
+        <div class="rl"><span class="eyebrow">keyword search</span>
+          <div class="it"><span class="r">1</span><span>test_log · row 1</span></div>
+          <div class="it"><span class="r">2</span><span>test_log · row 6</span></div>
+          <div class="it"><span class="r">3</span><span>test_log · row 8</span></div>
+          <div class="it"><span class="r">4–12</span><span class="muted">more test-log rows, EV-BMS-100 p.1 …</span></div>
+          <div class="it ans"><span class="r">13</span><span>EV-BMS-100 p.2 · Max discharge current row</span></div>
+        </div>
+        <div class="rl"><span class="eyebrow">meaning search</span>
+          <div class="it ans"><span class="r">1</span><span>EV-BMS-100 p.2 · Max discharge current row</span></div>
+          <div class="it"><span class="r">2</span><span>EV-BMS-100 p.2 · Max charge current row</span></div>
+          <div class="it"><span class="r">3</span><span>EV-BMS-100 p.2 · whole electrical table</span></div>
+          <div class="it"><span class="r">…</span><span class="muted">22nd: test_log row 1</span></div>
+        </div>
+      </div>
+      <p class="muted" style="font-size:.88rem">Keyword search is fooled: test-log rows contain "EV-BMS-100" as an exact identifier, while the answer row's text never says the product name. Sheet 2 showed this with a top-3 search (answer 2nd). With the full top 50 the identifier bonus spreads over more test-log rows and the answer drops to 13th.</p>
+    </div></div>
+
+    <div class="stp"><span class="dot"></span><div class="body">
+      <h3>Merge the two lists by rank (RRF)</h3>
+      <p style="font-size:.93rem">The two searches score on completely different scales: BM25 points versus similarity between 0 and 1. Adding the raw scores would be meaningless. So each list just gives every chunk <b>1 ÷ (60 + its rank)</b> points, and the points are added. Being near the top of either list helps; being near the top of <em>both</em> helps most.</p>
+      <div class="calc">
+        <div class="stack">
+          <label for="kwRank">Rank in keyword search: <b id="kwRankV" class="mono"></b><input type="range" id="kwRank" min="1" max="51" value="13"></label>
+          <label for="dnRank">Rank in meaning search: <b id="dnRankV" class="mono"></b><input type="range" id="dnRank" min="1" max="51" value="1"></label>
+          <p class="muted" style="font-size:.84rem">Slide to 51 for "not in that list". Starts at the answer row's real ranks (13 and 1). Compare: test_log row 1 was 1st and 22nd.</p>
+        </div>
+        <div class="out" id="calcOut" aria-live="polite"></div>
+      </div>
+      <div class="card scroll-x" style="padding:4px 10px">
+        <table class="t">
+          <tr><th>chunk</th><th>keyword rank</th><th>meaning rank</th><th>merged score</th></tr>
+          <tr style="background:var(--ok-soft)"><td><b>EV-BMS-100 p.2 · Max discharge current row</b></td><td class="n">13</td><td class="n">1</td><td class="n"><b>0.0301</b> · 1st</td></tr>
+          <tr><td>EV-BMS-100 p.1 · overview text</td><td class="n">12</td><td class="n">8</td><td class="n">0.0286</td></tr>
+          <tr><td>test_log · row 1</td><td class="n">1</td><td class="n">22</td><td class="n">0.0286</td></tr>
+          <tr><td>test_log · row 6</td><td class="n">2</td><td class="n">23</td><td class="n">0.0282</td></tr>
+          <tr><td>test_log · row 8</td><td class="n">3</td><td class="n">25</td><td class="n">0.0276</td></tr>
+        </table>
+      </div>
+      <div class="why"><b>Why k = 60</b>The 60 stops the top ranks from dominating: 1st gets 1/61 and 10th gets 1/70, not ten times less. It's the standard default from the original RRF paper. A tuned weighted blend would need many labelled questions to tune on, and this project has 20.</div>
+    </div></div>
+
+    <div class="stp"><span class="dot"></span><div class="body">
+      <h3>Guarantee exact identifier matches</h3>
+      <p style="font-size:.93rem">If the question contains an identifier that exists in the index (a part number, a patent number, "160"), every chunk carrying it is added to the candidates even if neither search ranked it in the top 50. An exact code match is too strong a signal to lose to ranking noise.</p>
+    </div></div>
+
+    <div class="stp"><span class="dot"></span><div class="body">
+      <h3>Group chunks into pages and score each page</h3>
+      <p style="font-size:.93rem">Answers cite <b>pages</b>, so pages are what's ranked and returned. A page's score is:</p>
+      <p class="mono" style="font-size:.88rem;background:var(--card);border:1px solid var(--rule);padding:10px 12px">best chunk + 0.1 × (next three chunks on the page) + 0.004 if the question named this document</p>
+      <div class="plegend"><span><i style="background:var(--ours)"></i>best chunk</span><span><i style="background:var(--lib)"></i>0.1 × support</span><span><i style="background:var(--redline)"></i>named-document boost</span></div>
+      <div class="pbars" role="img" aria-label="Page scores: EV-BMS-100 page 2 0.0398, test log 0.0369, EV-BMS-100 page 1 0.0347">
+        <div class="pb"><span class="name"><b>EV-BMS-100 p.2</b></span><div class="track"><span style="width:63.1%;background:var(--ours)"></span><span style="width:6.3%;background:var(--lib)"></span><span style="width:8.4%;background:var(--redline)"></span></div><span class="v">0.0398</span></div>
+        <div class="pb"><span class="name">test_log.csv</span><div class="track"><span style="width:60%;background:var(--ours)"></span><span style="width:17.4%;background:var(--lib)"></span></div><span class="v">0.0369</span></div>
+        <div class="pb"><span class="name">EV-BMS-100 p.1</span><div class="track"><span style="width:60%;background:var(--ours)"></span><span style="width:4.4%;background:var(--lib)"></span><span style="width:8.4%;background:var(--redline)"></span></div><span class="v">0.0347</span></div>
+        <div class="pb"><span class="name">EV-BMS-100 p.3</span><div class="track"><span style="width:27.3%;background:var(--ours)"></span><span style="width:8.4%;background:var(--redline)"></span></div><span class="v">0.0170</span></div>
+        <div class="pb"><span class="name">bill_of_materials</span><div class="track"><span style="width:26.8%;background:var(--ours)"></span></div><span class="v">0.0128</span></div>
+      </div>
+      <div class="grid2">
+        <div class="why"><b>Why only 0.1 × support</b>The test log is one "page" holding 109 rows. If every matching row counted fully, that page would win every question just by size. Capping support at three chunks, at a tenth of their weight, stops it flooding.</div>
+        <div class="note"><b>Notice the boost</b>The test log contains "EV-BMS-100" too, but spreadsheets are deliberately excluded from the named-document boost, since a product name appears all over the parts list and test log.</div>
+      </div>
+    </div></div>
+
+    <div class="stp"><span class="dot"></span><div class="body">
+      <h3>Keep the top 8 pages and fill in their neighbours</h3>
+      <p style="font-size:.93rem">The best 8 pages are kept. Each carries its matching chunks first, then other chunks from the same page in reading order, up to 10. Claude sees the answer row <em>with its surroundings</em>: the rest of the table, the heading and so on.</p>
+      <p style="font-size:.93rem">The code also records a few signals about how confident retrieval looks (top score, whether both searches agree on a top-5 chunk), which step 4 can use to decline.</p>
+    </div></div>
+  </div>
+  <details class="code"><summary>▸ In the code</summary><div>
+    <p><code>ae/retrieve/hybrid.py</code> (100 lines) → <span class="fn">retrieve</span> does all five steps; <span class="fn">rrf</span> is 6 lines. Constants at the top: <code>RRF_K = 60</code>, <code>TOP_N = 50</code>, <code>MAX_PAGES = 8</code>, <code>MAX_CHUNKS_PER_PAGE = 10</code>, <code>DOC_BOOST = 0.004</code> (about one rank step at the top).</p>
+    <p>A hard filter (patent number) is passed as <code>doc=</code> into both searches, so they only look inside that document.</p>
+    <p>The <code>mode</code> parameter ("bm25", "dense", "hybrid") switches searches off for the evaluation's comparisons. The gate signals are returned in <code>RetrievalResult.gate</code>.</p>
+  </div></details>
+</section>
+
+<section id="works">
+  <div class="head"><span class="no">B6</span><h2>Does it work? The recall numbers</h2></div>
+  <p class="prose">The evaluation (sheet 5) checks, for each of the 20 answerable dev questions, whether the correct page appears in the top k pages. These are the hybrid-backend results:</p>
+  <div class="card scroll-x" style="padding:4px 10px">
+    <table class="t recall">
+      <tr><th>search used</th><th>correct page 1st</th><th>in top 3</th><th>in top 5</th><th>in top 10</th></tr>
+      <tr><td>keyword only</td><td class="n">60%</td><td class="n">85%</td><td class="n">90%</td><td class="n">90%</td></tr>
+      <tr><td>meaning only</td><td class="n best">75%</td><td class="n best">95%</td><td class="n best">95%</td><td class="n best">100%</td></tr>
+      <tr><td><b>both, merged (what ships)</b></td><td class="n best">75%</td><td class="n">90%</td><td class="n">90%</td><td class="n best">100%</td></tr>
+    </table>
+  </div>
+  <div class="grid2">
+    <div class="note"><b>Honest reading</b>On these 20 questions, meaning search alone matches or slightly beats the merged search. One question is 5 percentage points, so 90% vs 95% is a single question and within noise. Expect to be asked: "why not just use dense search?"</div>
+    <div class="why"><b>The answer</b>Dense search fails on exact codes and bare numbers. B7 on sheet 2 showed it ranking the page title first for "labelled 160". The hidden test set will have more such questions, and the identifier guarantee needs the keyword index. The merged search costs nothing at top 10 (100%), and Claude receives 8 pages, so "somewhere in the top 8" is what really matters.</div>
+  </div>
+  <p class="muted prose" style="font-size:.88rem">The same evaluation also removed chunk kinds one at a time. Without row chunks, table questions found the right page first only 43% of the time instead of 71%. That's the measured case for sheet 2's "one row = one chunk" decision.</p>
+</section>
+
+<section id="decisions">
+  <div class="head"><span class="no">B7</span><h2>Decisions, and what was left out</h2></div>
+  <div class="card scroll-x" style="padding:4px 10px">
+    <table class="t">
+      <tr><th>decision</th><th>alternative</th><th>why this way</th></tr>
+      <tr><td>Rule-based router</td><td>an AI classifier</td><td>Rules beat embedding classifiers in routing benchmarks, they're free and explainable, and the always-on search covers mistakes.</td></tr>
+      <tr><td>Merge by rank (RRF, k=60)</td><td>a weighted blend of scores</td><td>Scores aren't comparable across searches; a blend needs labelled data to tune; RRF needs none.</td></tr>
+      <tr><td>Return pages, not chunks</td><td>top chunks only</td><td>Citations are page-level, and Claude reads better with surrounding context.</td></tr>
+      <tr><td>Patent number = filter, product name = boost</td><td>filter on both</td><td>Product names also appear in spreadsheet rows that may hold the answer.</td></tr>
+      <tr><td>Claude writes SQL, code runs it</td><td>let Claude read raw rows</td><td>Counting 109 rows by reading them is error-prone; SQL counts exactly.</td></tr>
+      <tr><td>No reranker</td><td>a cross-encoder model re-scoring the top results</td><td>Considered and listed as future work. Recall at 10 is already 100%, so the gain would mostly be in ordering.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="limits">
+  <div class="head"><span class="no">B8</span><h2>Limits and loose ends</h2></div>
+  <div class="grid2">
+    <div class="card stack"><h4>Mixed-case product codes</h4><p style="font-size:.92rem">"Falcon-VT1" isn't detected as a product code, so its document gets no boost. It still works on the dev set, but a harder question could miss.</p></div>
+    <div class="card stack"><h4>Retrieval "not found" gate is off</h4><p style="font-size:.92rem">Confidence signals are computed, but the threshold (<code>min_top_score</code>) defaults to 0 everywhere, so retrieval never declines by itself. All "not found" decisions are made in step 4's checks. The README lists tuning this gate as future work.</p></div>
+    <div class="card stack"><h4>Small test set</h4><p style="font-size:.92rem">20 answerable questions, all over 7 documents. The README suggests adding distractor documents to see whether recall holds when there's more to get lost in.</p></div>
+    <div class="card stack"><h4>Code tidy-ups an interviewer might spot</h4><p style="font-size:.92rem">In <code>parse_query</code>, the first <code>hard = …</code> line is immediately overwritten by the second. In <code>pipeline.py</code>, the "scope gate" <code>if</code> block ends in <code>pass</code> and does nothing. Both are harmless.</p></div>
+  </div>
+</section>
+
+<section id="selfcheck">
+  <div class="head"><span class="no">?</span><h2>Check yourself</h2></div>
+  <div class="qa">
+    <details><summary>What are the three routes, and which one always runs?</summary><div><p>Numeral (dictionary lookup), sql (database query), hybrid (search). Search always runs, so a wrong routing decision can't lose the answer.</p></div></details>
+    <details><summary>Why is a patent number a filter but a product name only a boost?</summary><div><p>A patent number identifies exactly one document. A product name like EV-BMS-100 also appears in test-log and parts-list rows, which may be where the answer is.</p></div></details>
+    <details><summary>Why merge by rank instead of adding scores?</summary><div><p>Keyword and meaning scores are on different scales, so adding them is meaningless. Ranks are comparable. RRF gives 1/(60+rank) from each list.</p></div></details>
+    <details><summary>For the 320 A question, keyword search ranked the answer 13th. How did it still end up first?</summary><div><p>Meaning search ranked it 1st. Its merged score, 1/73 + 1/61 = 0.0301, beat the test-log row that was 1st and 22nd (1/61 + 1/82 = 0.0286). Its page then got the named-document boost; the test log didn't.</p></div></details>
+    <details><summary>Why can't the 109-row test log win every question?</summary><div><p>A page's score is its best chunk plus only 0.1 × its next three chunks, so many weak matches can't add up to a win.</p></div></details>
+    <details><summary>How is "How many test runs failed?" answered?</summary><div><p>Counting word + spreadsheet word → sql route. Claude sees the table description, writes <code>SELECT COUNT(*) … WHERE result = 'FAIL'</code>, and the code runs it read-only and gets 7.</p></div></details>
+    <details><summary>Dense search alone scored as well. Why keep both?</summary><div><p>The difference is one question (noise). Dense fails on exact codes and numbers, which the hidden test will contain, and recall at 10 is 100% either way.</p></div></details>
+  </div>
+</section>
+
+<section id="route">
+  <div class="head"><span class="no">B9</span><h2>Now read the code, in this order</h2></div>
+  <p class="progress" id="routeProgress"></p>
+  <ul class="route-list" id="routeList"></ul>
+</section>
+
+<footer>
+  <span>Retrieval Field Guide · sheet 3 of 5</span>
+  <span><a href="https://claude.ai/artifact/TrsBj8Q31uuChAbjUTWZNa">← sheet 2, Indexing</a> · next: sheet 4, Answering</span>
+</footer>
+</div>
+
+<script>
+(function(){
+  /* real parse_query output on the hybrid index */
+  var D=[
+    ["q01","In US8,485,576 B2 (Robotic Gripper), what provides the attractive force at the tip of pin 120…","hybrid","patent → gripper (filter) · ref120"],
+    ["q02","According to US2,988,237 (Programmed Article Transfer), what component reduces the transfer head's traverse rate?","hybrid","patent → article transfer (filter)"],
+    ["q03","How many microprocessors monitor the run-away state in the controller described in US5,481,460?","hybrid","patent → EV controller (filter) · 'how many' but no spreadsheet word"],
+    ["q04","In US2017/0320570A1 (UAV VTOL patent), how many batteries does the UAV have and where are they located?","hybrid","patent → UAV (filter)"],
+    ["q05","What recharges the UAV's battery in US2017/0320570A1, and what is the mechanism called?","hybrid","patent → UAV (filter)"],
+    ["q06","What is the maximum discharge current rating of the EV-BMS-100?","hybrid","EV-BMS-100 → boost design doc"],
+    ["q07","What ingress protection (IP) rating does the EV-BMS-100 enclosure have?","hybrid","EV-BMS-100 → boost"],
+    ["q08","What communication protocol and bus speed does the EV-BMS-100 use?","hybrid","EV-BMS-100 → boost"],
+    ["q09","What is the peak current per ESC channel on the Falcon-VT1 flight controller?","hybrid","no clues (Falcon-VT1 not recognised)"],
+    ["q10","What is the operating temperature range of the Falcon-VT1 flight controller?","hybrid","no clues"],
+    ["q11","What is the backlash specification for the RJA-40 actuator module?","hybrid","RJA-40 → boost"],
+    ["q12","What is the rated continuous torque of the RJA-40 actuator, and what is its peak torque?","hybrid","RJA-40 → boost"],
+    ["q13","What component is labelled 160 in FIG. 2 of US8,485,576 B2?","numeral","patent filter · FIG. 2 · numeral 160"],
+    ["q14","What component is labelled 112 in FIG. 2 of US2,988,237?","numeral","patent filter · FIG. 2 · numeral 112"],
+    ["q15","In FIG. 3 of US2017/0320570A1, what is component 18?","numeral","patent filter · FIG. 3 · numeral 18"],
+    ["q16","How many M12 connector ports are shown on the EV-BMS-100 enclosure in Figure 2 of its design document?","hybrid","boost · FIG. 2 · visual → attach image"],
+    ["q17","How many test runs failed in the test log?","sql","'how many' + 'test log', 'failed'"],
+    ["q18","How many distinct EV-BMS-100 units were tested in the test log?","sql","'how many', 'distinct' + 'test log' · boost"],
+    ["q19","Which part number in the bill of materials has the highest unit cost, and what is that cost?","sql","'highest' + 'bill of materials', 'unit cost'"],
+    ["q20","What is the extended cost of the FVT-ESC-40A line item in the bill of materials?","hybrid","FVT-ESC-40A identifier · no counting word"],
+    ["q21","What is the warranty period for the EV-BMS-100? (unanswerable)","hybrid","boost · answer step must decline"],
+    ["q22","What is the maximum flight altitude of a UAV equipped with the Falcon-VT1 flight controller? (unanswerable)","hybrid","no clues · answer step must decline"]
+  ];
+  var tb=document.querySelector("#routeTable tbody"),chips=document.getElementById("routeChips"),cur="all";
+  function render(){tb.innerHTML="";D.forEach(function(r){if(cur!=="all"&&r[2]!==cur)return;var tr=document.createElement("tr");
+    var a=document.createElement("td");a.className="n";a.textContent=r[0];
+    var b=document.createElement("td");b.textContent=r[1];
+    var c=document.createElement("td");var s=document.createElement("span");s.className="rt "+r[2];s.textContent=r[2];c.appendChild(s);
+    var d=document.createElement("td");d.className="sig";d.style.fontFamily="var(--mono)";d.style.fontSize=".74rem";d.style.color="var(--muted)";d.textContent=r[3];
+    tr.appendChild(a);tr.appendChild(b);tr.appendChild(c);tr.appendChild(d);tb.appendChild(tr)});
+    [].forEach.call(chips.children,function(x){x.setAttribute("aria-pressed",x.dataset.r===cur?"true":"false")});}
+  [["all","all 22"],["hybrid","hybrid 16"],["numeral","numeral 3"],["sql","sql 3"]].forEach(function(o){var b=document.createElement("button");b.type="button";b.dataset.r=o[0];b.textContent=o[1];b.addEventListener("click",function(){cur=o[0];render()});chips.appendChild(b)});
+  render();
+
+  /* RRF calculator */
+  var kr=document.getElementById("kwRank"),dr=document.getElementById("dnRank"),out=document.getElementById("calcOut");
+  function f(r){return r>50?0:1/(60+r)}
+  function calc(){var a=+kr.value,b=+dr.value;
+    document.getElementById("kwRankV").textContent=a>50?"not in list":a;
+    document.getElementById("dnRankV").textContent=b>50?"not in list":b;
+    var x=f(a),y=f(b),s=x+y;
+    out.innerHTML="";
+    function line(t,v,bold){var p=document.createElement("div");p.textContent=t;if(v){var e=document.createElement(bold?"b":"span");e.textContent=v;p.appendChild(e)}out.appendChild(p)}
+    line("keyword: "+(a>50?"0 (not in top 50)":"1 ÷ (60 + "+a+") = "+x.toFixed(4)));
+    line("meaning: "+(b>50?"0 (not in top 50)":"1 ÷ (60 + "+b+") = "+y.toFixed(4)));
+    line("merged score = ",s.toFixed(4),true);
+    var cmp=document.createElement("div");cmp.style.color="var(--muted)";cmp.style.marginTop="6px";
+    cmp.textContent=s>0.0286?"Beats test_log row 1 (0.0286).":(s===0?"Not a candidate.":"Below test_log row 1 (0.0286).");out.appendChild(cmp);}
+  kr.addEventListener("input",calc);dr.addEventListener("input",calc);calc();
+
+  var R=[
+    ["ae/retrieve/query.py","parse_query and its regular expressions; doc_aliases. Compare against the route table in B2."],
+    ["tests/test_routing.py","Four routing cases and the identifier index, in 40 lines."],
+    ["ae/retrieve/hybrid.py","retrieve() is B5's five steps; rrf() is 6 lines."],
+    ["ae/retrieve/sql.py","The text-to-SQL prompt (SYSTEM) and the one-retry loop."],
+    ["ae/extract/structured.py → describe_schema, query_sql","What Claude sees about the tables, and the read-only safety checks."],
+    ["ae/answer/pipeline.py → Engine.ask","How the routes are called together; _numeral_lookup is route 1."],
+    ["Try: make ask Q=\"How many test runs failed in the test log?\" DEBUG=1","Prints the route, reasons, SQL and top pages for any question."],
+    ["data/eval/RESULTS.md","The 'Retrieval: page Recall@k' tables, including the ablations."]
+  ];
+  var KEY="ae-guide-m3-route",st={};
+  try{st=JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch(e){st={}}
+  var ul=document.getElementById("routeList"),pr=document.getElementById("routeProgress");
+  function upd(){var n=R.filter(function(_,i){return st[i]}).length;pr.textContent=n+" of "+R.length+" done"}
+  R.forEach(function(r,i){
+    var li=document.createElement("li");if(st[i])li.className="done";
+    var cb=document.createElement("input");cb.type="checkbox";cb.id="route3-"+i;cb.checked=!!st[i];
+    var lab=document.createElement("label");lab.htmlFor=cb.id;
+    var p=document.createElement("span");p.className="path";p.textContent=(i+1)+". "+r[0];
+    var s=document.createElement("span");s.className="muted";s.style.fontSize=".9rem";s.textContent=r[1];
+    lab.appendChild(p);lab.appendChild(s);
+    cb.addEventListener("change",function(){st[i]=cb.checked;li.className=cb.checked?"done":"";try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}upd()});
+    li.appendChild(cb);li.appendChild(lab);ul.appendChild(li);
+  });
+  upd();
+})();
+</script>

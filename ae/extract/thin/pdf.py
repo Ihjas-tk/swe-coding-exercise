@@ -15,14 +15,18 @@ from pathlib import Path
 import pdfplumber
 import pymupdf
 
+import logging
+
 from ae.extract.cache import PageCache
+from ae.log import get_logger, timed
 from ae.extract.thin import figures as figmod
 from ae.extract.thin import ocr as ocrmod
 from ae.extract.thin import tables as tabmod
 from ae.extract.thin import text as textmod
 from ae.schema import Block, FigureBlock, Page, ParsedDocument, TableBlock, TextBlock
 
-VERSION = "5"
+VERSION = "9"
+log = get_logger(__name__)
 FIG_DIR = Path("data/extracted/thin/figures")
 
 
@@ -37,7 +41,9 @@ def parse_pdf(path: Path, use_cache: bool = True, ocr_labels: bool = True) -> Pa
             if cached is not None:
                 pages.append(cached)
                 continue
-            page = _parse_page(doc[pno], pl.pages[pno], path.stem, ocr_labels)
+            with timed("extract.page", path.name, level=logging.DEBUG, page=pno + 1) as t:
+                page = _parse_page(doc[pno], pl.pages[pno], path.stem, ocr_labels)
+                t["ocr"] = page.is_scanned
             cache.put(page)
             pages.append(page)
     _link_cross_page_captions(pages)
@@ -119,6 +125,7 @@ def _link_cross_page_captions(pages: list[Page]) -> None:
             if b.kind == "text" and b.role == "caption" and b.bbox.y0 < 0.25 * nxt.height:
                 fig = orphans.pop(0)
                 fig.caption = b.text
+                fig.caption_page = nxt.number
                 fig.figure_id = figmod.figure_id(b.text)
                 nxt.blocks.remove(b)
                 if not orphans:

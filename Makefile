@@ -1,9 +1,17 @@
 .PHONY: setup extract ingest ask eval clean-cache
 
-BACKEND ?= thin
+BACKEND ?= hybrid
 
 setup:            ## create venv and install pinned deps (needs: uv, tesseract)
 	uv sync
+	uv run ae check || true
+
+check:            ## verify tesseract, libreoffice, packages, API key, cached models, indexes
+	uv run ae check
+
+smoke:            ## ~5 min end-to-end check on one file of each type (ingest + ask + score 9 dev questions)
+	uv run ae smoke --backend $(BACKEND)
+	uv run ae ask "What is the maximum discharge current rating of the EV-BMS-100?" --backend $(BACKEND) --name smoke
 
 extract:          ## run extraction only, dump data/extracted/$(BACKEND)/
 	uv run ae extract --backend $(BACKEND)
@@ -12,18 +20,38 @@ structured:       ## load CSV/XLSX into SQLite and print the schema
 	uv run ae load-structured
 
 EMBED ?= ibm-granite/granite-embedding-english-r2
+VLM ?= 1
 
-ingest:           ## extract + structured + numerals + chunk + index (+ embeddings when EMBED is set)
-	uv run ae ingest --backend $(BACKEND) $(if $(EMBED),--embed $(EMBED),)
+ingest:           ## extract + structured + numerals + chunk + index + embeddings (+ VLM figure descriptions when VLM=1)
+	uv run ae ingest --backend $(BACKEND) $(if $(EMBED),--embed $(EMBED),) $(if $(filter 1,$(VLM)),--vlm,)
 
 ingest-nodense:   ## same, without embeddings (no model download needed)
 	uv run ae ingest --backend $(BACKEND)
 
-ask:              ## make ask Q="..."
-	uv run ae ask "$(Q)"
+ask:              ## make ask Q="..."  (add DEBUG=1 for routing/retrieval details)
+	uv run ae ask "$(Q)" --backend $(BACKEND) $(if $(filter 1,$(DEBUG)),--debug,)
 
-eval:             ## (phase 3) run the full staged evaluation
-	uv run ae eval --backend $(BACKEND)
+eval:             ## full staged evaluation for all backends -> data/eval/RESULTS.md (builds any missing index first; LLM calls are cached)
+	uv run ae eval
+
+serve:            ## minimal HTTP API on :8080 that keeps the models warm (POST /ask {"question": ...})
+	uv run ae serve --backend $(BACKEND)
+
+eval-fast:        ## extraction + retrieval stages only (no LLM calls)
+	uv run ae eval --no-answers
+
+ingest-all:       ## build the three indexes used by `make eval`
+	$(MAKE) ingest BACKEND=thin
+	$(MAKE) ingest BACKEND=docling
+	$(MAKE) ingest BACKEND=hybrid
+
+external:         ## fetch the external evaluation corpus, ingest it (all backends) and score it -> data/eval/EXTERNAL.md
+	uv run ae fetch-external
+	for be in thin docling hybrid; do uv run ae ingest --backend $$be --corpus data/external/evalset --name ext $(if $(EMBED),--embed $(EMBED),) $(if $(filter 1,$(VLM)),--vlm,); done
+	uv run ae eval-external --questions gold/external_questions.json
+
+test:
+	uv run pytest -q
 
 clean-cache:
 	rm -rf data/cache data/extracted
