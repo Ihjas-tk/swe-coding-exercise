@@ -36,7 +36,7 @@ from ae.schema import BBox, TextBlock
 FULL_WIDTH_FRAC = 0.62  # block wider than this fraction of text area => spans columns
 MIN_GUTTER = 12.0  # points; smaller x-gaps between blocks are not column gutters
 MERGE_GAP = 3.0  # points; consecutive blocks closer than this (same size) are one paragraph
-HEADER_FRAC = 0.09  # top/bottom fraction of page height treated as running header/footer
+HEADER_FRAC = 0.12  # top/bottom fraction of page height treated as running header/footer (patent headers sit at ~10%)
 CAPTION_RE = re.compile(r"^\s*(FIG(?:URE)?\.?|Figure|Table)\s*\d+[A-Za-z]?\s*([—–:\-]|\.?\s*$)", re.I)
 FIG_TITLE_RE = re.compile(r"^\s*(FIG(?:URE)?\.?|Figure)\s*\d+[A-Za-z]?\.?\s*$", re.I)  # bare "FIG. 2" above a drawing
 HEADING_RE = re.compile(r"^\s*(\d+(\.\d+)*\.?\s+\S|[A-Z][A-Z \-&/]{5,}$)")

@@ -72,6 +72,36 @@ def load_structured(
 
 
 @app.command()
+def ingest(
+    backend: str = typer.Option("thin", help="thin | docling | hybrid"),
+    embed: str = typer.Option(None, help="Embedding model id (e.g. ibm-granite/granite-embedding-english-r2); omit to skip embeddings."),
+    no_cache: bool = typer.Option(False, help="Re-parse instead of using the page cache."),
+):
+    """Extract, load structured files, build numeral index, chunk, and index into data/index/<backend>.sqlite."""
+    from ae.index.ingest import ingest as _ingest
+
+    stats = _ingest(backend=backend, use_cache=not no_cache, embed_model=embed, log=lambda m: rprint(f"[dim]{m}[/dim]"))
+    rprint(stats)
+
+
+@app.command()
+def search(
+    question: str,
+    backend: str = typer.Option("thin"),
+    k: int = typer.Option(8),
+    doc: str = typer.Option(None, help="Restrict to one document file name."),
+):
+    """Keyword (BM25 + identifier) search over the index; prints the top chunks."""
+    from ae.index.store import IndexStore, index_db
+
+    store = IndexStore(index_db(backend))
+    hits = store.keyword_search(question, k=k, doc=doc)
+    for h in hits:
+        c = store.get([h.chunk_id])[0]
+        rprint(f"[cyan]{h.score:6.2f}[/cyan] [bold]{c.kind:13}[/bold] {c.doc} p{c.page} | {c.text[:110]}")
+
+
+@app.command()
 def show(path: Path, page: int = typer.Option(0, help="1-based page; 0 = all")):
     """Pretty-print a ParsedDocument JSON produced by `extract`."""
     from ae.schema import ParsedDocument

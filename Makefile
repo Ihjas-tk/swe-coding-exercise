@@ -11,7 +11,12 @@ extract:          ## run extraction only, dump data/extracted/$(BACKEND)/
 structured:       ## load CSV/XLSX into SQLite and print the schema
 	uv run ae load-structured
 
-ingest:           ## (phase 2) extract + chunk + index
+EMBED ?= ibm-granite/granite-embedding-english-r2
+
+ingest:           ## extract + structured + numerals + chunk + index (+ embeddings when EMBED is set)
+	uv run ae ingest --backend $(BACKEND) $(if $(EMBED),--embed $(EMBED),)
+
+ingest-nodense:   ## same, without embeddings (no model download needed)
 	uv run ae ingest --backend $(BACKEND)
 
 ask:              ## make ask Q="..."

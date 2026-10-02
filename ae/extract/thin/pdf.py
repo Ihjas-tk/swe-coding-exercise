@@ -22,7 +22,7 @@ from ae.extract.thin import tables as tabmod
 from ae.extract.thin import text as textmod
 from ae.schema import Block, FigureBlock, Page, ParsedDocument, TableBlock, TextBlock
 
-VERSION = "4"
+VERSION = "5"
 FIG_DIR = Path("data/extracted/thin/figures")
 
 
