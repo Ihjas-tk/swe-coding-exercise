@@ -78,6 +78,7 @@ def _adversarial_row(u: dict, a: Answer) -> dict:
         "citations": a.citations,
         "not_found": a.not_found,
         "route": a.debug.get("route"),
+        "api_error": a.debug.get("error") or a.debug.get("sql_error"),
         "correct": bool(ok),
         "stage": None if ok else "abstention",
         "ms": a.debug.get("ms"),
@@ -120,6 +121,12 @@ def summarise(rows: list[dict]) -> dict:
     """Aggregate per-question rows into the answer-stage summary."""
     ans = [r for r in rows if r["set"] == "dev" and r["type"] != "unanswerable"]
     un = [r for r in rows if r["type"] == "unanswerable"]
+    api_errors = [r for r in rows if r.get("api_error")]
+    if api_errors:
+        log.error(
+            f"{len(api_errors)} of {len(rows)} questions hit an API error (first: {str(api_errors[0]['api_error'])[:120]}); "
+            "answer scores below are NOT meaningful — fix the key/credit (make check) and rerun"
+        )
     by_type: dict[str, dict] = {}
     for t in QUESTION_TYPES:
         sub = [r for r in ans if r["type"] == t]

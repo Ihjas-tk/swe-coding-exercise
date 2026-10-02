@@ -35,6 +35,22 @@ def _find_dotenv() -> Path | None:
     return None
 
 
+def _check_api_live() -> tuple[str, str, str]:
+    """One five-token live call: catches an invalid key or an exhausted credit balance before a long run."""
+    from ae.llm import complete
+
+    try:
+        complete("Reply with the single word OK.", "ping", max_tokens=5, use_cache=False)
+        return _ok("API", "reachable (one live test call succeeded)")
+    except Exception as e:  # any SDK/transport error: report it verbatim, the user must act on it
+        msg = str(e)
+        if "credit balance" in msg:
+            return _fail(
+                "API", "the key's credit balance is exhausted — top up at console.anthropic.com or use another key"
+            )
+        return _fail("API", f"live call failed: {type(e).__name__}: {msg[:160]}")
+
+
 def _check_dotenv() -> tuple[str, str, str]:
     env = _find_dotenv()
     if env:
@@ -124,6 +140,8 @@ def run_checks() -> list[tuple[str, str, str]]:
             "not set — `make ingest` works (no figure descriptions); `make ask` / `make eval` need it (put it in .env)",
         )
     )
+    if key:
+        out.append(_check_api_live())
     # models cached? (same cache directory huggingface_hub resolves: HF_HUB_CACHE, else HF_HOME/hub)
     from ae.models import DOCLING_REPOS, hub_cache, is_cached
 
