@@ -53,6 +53,25 @@ def prep_external():
 
 
 @app.command()
+def load_structured(
+    path: list[Path] = typer.Argument(None, help="CSV/XLSX files; default: structured/ in the corpus."),
+    sql: str = typer.Option(None, help="Optional SELECT to run after loading."),
+):
+    """Load CSV/XLSX files into typed SQLite tables and print the schema the LLM will see."""
+    from ae.extract.structured import describe_schema, load_structured as _load, query_sql
+
+    files = path or [p for p in corpus_files() if p.suffix.lower() in (".csv", ".xlsx")]
+    for t in _load(files):
+        rprint(f"[green]{t.doc}[/green] -> table [bold]{t.name}[/bold]: {t.n_rows} rows, {len(t.columns)} columns")
+    rprint(describe_schema())
+    if sql:
+        res = query_sql(sql)
+        rprint(res["columns"])
+        for r in res["rows"]:
+            rprint(r)
+
+
+@app.command()
 def show(path: Path, page: int = typer.Option(0, help="1-based page; 0 = all")):
     """Pretty-print a ParsedDocument JSON produced by `extract`."""
     from ae.schema import ParsedDocument

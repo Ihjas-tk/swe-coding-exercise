@@ -8,6 +8,9 @@ setup:            ## create venv and install pinned deps (needs: uv, tesseract)
 extract:          ## run extraction only, dump data/extracted/$(BACKEND)/
 	uv run ae extract --backend $(BACKEND)
 
+structured:       ## load CSV/XLSX into SQLite and print the schema
+	uv run ae load-structured
+
 ingest:           ## (phase 2) extract + chunk + index
 	uv run ae ingest --backend $(BACKEND)
 
