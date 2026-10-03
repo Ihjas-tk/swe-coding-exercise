@@ -41,7 +41,8 @@ make eval             # ~3 min: run the evaluation -> data/eval/RESULTS.md
 ```
 
 `make ingest` reads the three corpus folders and builds one index file. `make ask` and
-`make eval` read that index. If something is missing, `make check` tells you what: lines marked
+`make eval` read that index. `make help` lists every other target, including `make test`,
+`make extract` and `make external`. If something is missing, `make check` tells you what: lines marked
 `!` are warnings, lines marked `✗` need fixing first. `make smoke` is an optional four-minute
 self-test on one file of each type; it uses its own small index and doesn't touch the main one.
 
@@ -101,35 +102,6 @@ The only thing you have to set is your Anthropic API key, in `.env` at the repo 
 default. If you want to change which Claude models are used, which embedding model, or where
 the index lives, `.env.example` lists the settings with one line of explanation each. Without a
 key you can still build the index; asking and evaluating need it.
-
-## Commands
-
-`make help` prints this list from the Makefile.
-
-| Target | What it does |
-|---|---|
-| `make setup` | runs `./setup.sh`: uv, Tesseract, LibreOffice, pinned deps, `.env`, models, `ae check` (re-runnable) |
-| `make models` | pre-download the embedding model (`EMBED`) and the Docling layout models into the HF cache |
-| `make check` | verify Tesseract, LibreOffice, Python packages, `uv.lock`, `.env` + API key, cached models, the index |
-| `make smoke` | optional ~4 min self-test on one file of each type in its own index (ingest + ask + score 16 dev questions) |
-| `make extract` | extraction only; dumps `data/extracted/` (JSON + Markdown per document; figure crops in `data/extracted/figures/`) |
-| `make structured` | load CSV/XLSX into SQLite and print the schema the LLM sees |
-| `make ingest` | index `patents/`, `design_docs/`, `structured/` (or `CORPUS=<dir>` into `NAME=<index>`): extract + structured + numerals + chunk + index + embeddings (+ figure descriptions when `VLM=1`) |
-| `make ingest-nodense` | same, without embeddings (no embedding model needed) |
-| `make ask Q="..."` | answer one question (`DEBUG=1` adds routing/retrieval/verification details; `NAME=<index>` for a custom corpus) |
-| `make eval` | full staged evaluation of the built-in corpus -> `data/eval/RESULTS.md` (builds the index first if it is missing) |
-| `make eval-quick` | answer a question file and score it: `QUESTIONS=<file> NAME=<index>` (default: the dev set on the default index) |
-| `make eval-fast` | extraction + retrieval stages only (no LLM calls) |
-| `make external` | fetch the external evaluation corpus, ingest it (index `ext`) and score it -> `data/eval/EXTERNAL.md` |
-| `make test` | unit tests (the integration tests need `make ingest` and skip without it) |
-| `make lint` / `make fmt` | ruff format check + lint + mypy / apply the formatter and safe lint fixes |
-| `make clean-cache` | delete page caches and extraction dumps (indexes and the LLM/VLM/embedding caches are kept) |
-
-Lower-level commands are in `uv run ae --help` (e.g. `ae search`, `ae show`, `ae eval --quick`).
-The OmniDocBench slice is not downloaded by a target: with the subset annotations and images in
-`data/external/omnidocbench/`, run `uv run ae prep-external` and
-`uv run ae extract data/external/omnidocbench/pdfs/*.pdf --out data/external/omnidocbench/extracted`;
-`make eval` then adds its rows.
 
 ## Troubleshooting
 
@@ -225,7 +197,9 @@ Dropping the per-row table chunks cost two of the seven table questions.
 
 ## Results
 
-All numbers come from `make eval` (`data/eval/RESULTS.md` has every breakdown). The dev set has
+All numbers come from `make eval` (`data/eval/RESULTS.md` has every breakdown). The OmniDocBench
+rows appear once its English double-column subset is placed under `data/external/omnidocbench/`
+and run through `uv run ae prep-external` and `uv run ae extract` on the resulting PDFs. The dev set has
 20 answerable and 2 unanswerable questions; we added 30 adversarial unanswerable questions, an
 extraction gold set for the corpus, and 106 scanned pages from OmniDocBench. A full eval makes
 about a hundred model calls (roughly 60 to Sonnet, 40 to Haiku); replies are cached, so a rerun without code changes makes none.
