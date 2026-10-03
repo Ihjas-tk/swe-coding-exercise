@@ -27,7 +27,7 @@ Works on macOS (Homebrew) or Debian/Ubuntu (apt). `setup.sh` installs everything
 git clone https://github.com/Ihjas-tk/swe-coding-exercise.git && cd swe-coding-exercise
 ./setup.sh            # installs what is missing, downloads the models, creates .env, runs `make check`
 #   setup.sh asks for your Anthropic key; or edit .env afterwards:  ANTHROPIC_API_KEY=sk-ant-...
-make ingest           # ~2 min: index the nine corpus files
+make ingest           # ~3 min: index the nine corpus files
 make ask Q="What is the maximum discharge current rating of the EV-BMS-100?"
 make eval             # ~3 min: run the evaluation -> data/eval/RESULTS.md
 ```
@@ -70,7 +70,7 @@ Measured on a fresh clone on an M-series MacBook (16 GB, no GPU) with an empty m
 | Step | Time |
 |---|---|
 | `./setup.sh` (dependencies and about 800 MB of models; longer if Tesseract or LibreOffice must be installed) | ~4 min |
-| `make ingest` (the nine corpus files) | ~1.5 min |
+| `make ingest` (the nine corpus files; about half of it is embedding) | ~3 min |
 | `make ask` (each call is a new process; the embedding model takes ~15 s to load) | 2–15 s |
 | `make eval` (52 questions; model replies are cached, so a rerun costs nothing) | ~3 min |
 | `make smoke` (optional) | ~4 min |
@@ -288,7 +288,7 @@ when a patent has many. `make external` reproduces the run (`data/eval/EXTERNAL.
 - A page whose text layer is wrong but looks plausible is trusted, so it is neither OCR'd nor
   sent through the layout model.
 - Page numbers for DOCX files follow LibreOffice's rendering, which can differ from Word's.
-- Long documents are slow: embedding runs at about 50 ms per chunk on a laptop CPU, and Docling
+- Long documents are slow: embedding runs at about 0.3 s per chunk on a laptop CPU, and Docling
   converts the whole document as soon as one page needs OCR.
 - The evaluation is small: 20 answerable questions, so one question moves a score by 5 points,
   and the unanswerable set was written by us.
@@ -302,7 +302,7 @@ Things I would look into further:
 2. Why Docling duplicates regions on the scanned patent, since fixing that would let its
    stronger scanned-page text be used.
 3. Running the layout model only on the pages that need it, and a faster embedding path, so a
-   100-page document takes minutes rather than a quarter of an hour.
+   100-page document takes a couple of minutes rather than ten.
 4. Retrieval under harder conditions: more documents, near-duplicates, and a reranking step.
 5. Tuning the not-found thresholds on a larger unanswerable set.
 

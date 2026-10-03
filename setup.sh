@@ -218,7 +218,7 @@ cat <<'EOF'
 
 Next steps:
   1. Make sure ANTHROPIC_API_KEY is set in .env
-  2. make ingest                # ~2 min: index the 9 files in patents/ design_docs/ structured/
+  2. make ingest                # ~3 min: index the 9 files in patents/ design_docs/ structured/
   3. make ask Q="What is the maximum discharge current rating of the EV-BMS-100?"
   4. make eval                  # ~3 min: staged evaluation -> data/eval/RESULTS.md
   Optional: make smoke          # ~4 min self-test on one file of each type, in its own index

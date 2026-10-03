@@ -117,8 +117,11 @@ class EmbeddingCache:
         self.conn.commit()
 
 
+EMBED_BATCH_SIZE = 1  # on a laptop CPU granite-r2 runs ~330 ms/chunk at batch 1 vs ~700 ms at batch 32 (padding)
+
+
 def embed_texts(
-    texts: list[str], model: str = DEFAULT_MODEL, kind: str = "passage", batch_size: int = 32
+    texts: list[str], model: str = DEFAULT_MODEL, kind: str = "passage", batch_size: int = EMBED_BATCH_SIZE
 ) -> np.ndarray:
     """Embed passages or queries (`kind` "passage" | "query") and return one row per text.
 
