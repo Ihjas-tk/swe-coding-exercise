@@ -1,9 +1,8 @@
-"""Common document schema shared by every extraction backend.
+"""Document schema produced by extraction and consumed by every later stage.
 
 Design rule: every block carries its source document, page number (1-based) and
 bounding box in PDF points with a top-left origin. Downstream stages (chunking,
-indexing, citation) only ever see this schema, so backends are interchangeable
-and can be compared head to head in the evaluation.
+indexing, citation) only ever see this schema, never a parser's own objects.
 """
 
 from __future__ import annotations
@@ -70,7 +69,7 @@ class TextBlock(BaseModel):
     bbox: BBox
     text: str
     role: Role = "body"
-    column: int | None = None  # 0 = left/full, 1 = right, ... (native backend only)
+    column: int | None = None  # 0 = left/full, 1 = right, ... (text blocks from PyMuPDF / Tesseract)
     source: TextSource = "text_layer"
     ocr_confidence: float | None = None  # mean word confidence 0-100 when source == "ocr"
 
@@ -137,7 +136,6 @@ class Page(BaseModel):
     blocks: list[Block] = Field(default_factory=list)  # in reading order
     is_scanned: bool = False  # True when the page had no usable text layer and went through OCR
     ocr_reason: str | None = None  # "no_text_layer" | "low_text_quality" | None
-    backend: str | None = None  # which backend produced this page (hybrid sets it per page)
 
     def text(self) -> str:
         """Plain text of the page in reading order (tables as markdown, figures as captions)."""
@@ -153,13 +151,12 @@ class Page(BaseModel):
 
 
 class ParsedDocument(BaseModel):
-    """A whole document as extracted by one backend."""
+    """A whole extracted document."""
 
     doc: str  # file name as it should appear in citations, e.g. "EV-BMS-100_design_document.pdf"
     source_path: str
-    backend: str  # "native" | "docling" | "hybrid"
     pages: list[Page]
-    meta: dict[str, Any] = Field(default_factory=dict)  # backend-specific: n_pages, page_mapping, ...
+    meta: dict[str, Any] = Field(default_factory=dict)  # n_pages, page_mapping, docling_layout_pages, ...
 
     def to_markdown(self) -> str:
         """Plain-text dump of every page, separated by page markers."""

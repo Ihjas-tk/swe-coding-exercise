@@ -1,4 +1,4 @@
-"""Native backend orchestrator: one PDF -> ParsedDocument, page by page.
+"""Native PDF extraction: one PDF -> ParsedDocument, page by page.
 
 Per page:
   1. scanned?  -> Tesseract blocks            else -> PyMuPDF text-layer blocks
@@ -28,8 +28,8 @@ from ae.schema import BBox, Block, FigureBlock, Page, ParsedDocument, TableBlock
 
 log = get_logger(__name__)
 
-VERSION = "10"
-"""Page-cache version of this backend; bump it whenever a change alters parsed pages."""
+VERSION = "11"
+"""Page-cache version of native extraction; bump it whenever a change alters parsed pages."""
 
 # Figures on scanned pages (located from the OCR layout) ----------------------------------
 SCAN_PARAGRAPH_MIN_WORDS = 8
@@ -68,9 +68,7 @@ def parse_pdf(path: Path, use_cache: bool = True, ocr_labels: bool = True) -> Pa
             cache.put(page)
             pages.append(page)
     _link_cross_page_captions(pages)
-    return ParsedDocument(
-        doc=path.name, source_path=str(path), backend="native", pages=pages, meta={"n_pages": len(pages)}
-    )
+    return ParsedDocument(doc=path.name, source_path=str(path), pages=pages, meta={"n_pages": len(pages)})
 
 
 def _parse_page(page: pymupdf.Page, pl_page: pdfplumber.page.Page, doc_stem: str, do_ocr_labels: bool) -> Page:
@@ -106,7 +104,6 @@ def _parse_page(page: pymupdf.Page, pl_page: pdfplumber.page.Page, doc_stem: str
         blocks=blocks,
         is_scanned=scanned,
         ocr_reason=reason,
-        backend="native",
     )
 
 

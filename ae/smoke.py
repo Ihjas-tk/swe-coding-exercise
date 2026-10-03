@@ -1,7 +1,7 @@
 """`ae smoke`: a 5-minute end-to-end check on one file of each type.
 
 Builds data/smoke/corpus (scanned patent, born-digital patent, design-doc PDF, DOCX, CSV,
-XLSX), ingests it into the `smoke` index with the default backend, and answers the
+XLSX), ingests it into the `smoke` index (data/index/smoke/), and answers the
 dev-set questions whose evidence lies in those files. Meant as the first thing a reviewer
 runs after `make check`; `make eval` is the full run.
 
@@ -27,7 +27,7 @@ log = get_logger(__name__)
 ROOT = Path("data/smoke")
 INDEX_NAME = "smoke"
 PICKS = [
-    "patents/US2988237A_programmed_article_transfer.pdf",  # scanned -> OCR path (+ Docling layout in hybrid)
+    "patents/US2988237A_programmed_article_transfer.pdf",  # scanned -> OCR path + Docling layout pass
     "patents/US8485576B2_robotic_gripper.pdf",  # born-digital two-column + numerals
     "design_docs/EV-BMS-100_design_document.pdf",  # ruled spec tables, cross-page caption
     "design_docs/RJA-40_actuator_design_document.docx",  # DOCX + LibreOffice page mapping
@@ -41,7 +41,6 @@ KNOWN_PAGE_DISAGREEMENTS = {"q02", "q07"}  # right answer, page the dev set does
 class SmokeResult:
     """Outcome of a smoke run: index size and one scored row per question (empty without an API key)."""
 
-    backend: str
     chunks: int
     questions: int
     rows: list[dict] = field(default_factory=list)
@@ -59,9 +58,8 @@ class SmokeResult:
         return out
 
 
-def run(backend: str | None = None) -> SmokeResult:
+def run() -> SmokeResult:
     """Ingest the smoke corpus into the `smoke` index and answer the matching dev-set questions."""
-    backend = backend or config.BACKEND
     corpus = ROOT / "corpus"
     corpus.mkdir(parents=True, exist_ok=True)
     for rel in PICKS:
@@ -73,27 +71,25 @@ def run(backend: str | None = None) -> SmokeResult:
     from ae.corpus import corpus_files
     from ae.index.ingest import ingest
 
-    log.info(f"smoke: ingesting {len(PICKS)} files with backend={backend}")
-    stats = ingest(
-        backend=backend, files=corpus_files(corpus=corpus), embed_model=config.EMBED_MODEL, vlm=bool(config.api_key())
-    )
+    log.info(f"smoke: ingesting {len(PICKS)} files")
+    stats = ingest(files=corpus_files(corpus=corpus), embed_model=config.EMBED_MODEL, vlm=bool(config.api_key()))
     dev = json.loads(Path("dev_set/questions.json").read_text())
     qs = [q for q in dev if not q["evidence"] or all(e["doc"] in docs for e in q["evidence"])]
     qfile = ROOT / "questions.json"
     qfile.write_text(json.dumps(qs, indent=1))
-    result = SmokeResult(backend, sum(stats.get("kinds", {}).values()), len(qs))
+    result = SmokeResult(sum(stats.get("kinds", {}).values()), len(qs))
     if config.api_key():
         from ae.eval.devset import run as run_dev
 
         log.info(f"smoke: answering {len(qs)} dev-set questions")
-        result.rows = run_dev(questions=qfile, backend=backend, out=ROOT / "results.json")
+        result.rows = run_dev(questions=qfile, out=ROOT / "results.json")
         result.answered = True
     return result
 
 
 def render(r: SmokeResult) -> str:
     """Plain-text summary: counts by question type, page hits as information, then the verdict."""
-    lines = [f"smoke: backend={r.backend}, {r.chunks} chunks indexed, {r.questions} questions"]
+    lines = [f"smoke: {r.chunks} chunks indexed, {r.questions} questions"]
     if not r.answered:
         lines.append("no ANTHROPIC_API_KEY: ingest-only smoke (put the key in .env to answer questions)")
         return "\n".join(lines)

@@ -1,33 +1,47 @@
 # Note on AI coding tools
 
-This repository was built with Claude Code (Claude Fable 5.1) driving the work in
-conversation with the author, who set the direction at each step, reviewed outputs,
-and made the design decisions recorded below.
+## What I used
 
-How it was used:
+Claude Code, running Claude Fable 5.1, for the whole project. For research and for some of the
+larger work packages it ran Claude Opus subagents in parallel. No other coding assistants,
+no AI-generated code copied in from elsewhere. The answering pipeline itself calls the
+Anthropic API (Sonnet for answers, Haiku for figure descriptions and grading); that is part of
+the product, not of how it was built.
 
-- **Research before building.** Four background research tasks (run on Claude Opus)
-  surveyed published evidence on chunking, retrieval strategy, embedding models, and
-  figure QA / abstention, each producing a sourced findings file. Their recommendations
-  (deterministic chunk prefixes, hybrid BM25 + dense with RRF, granite-embedding-r2,
-  numeral index from text rather than OCR, stacked abstention checks) shaped modules
-  1–10 and are cited in the module docstrings and README.
-- **Writing code and tests.** The assistant wrote the modules phase by phase (PDF
-  extraction, DOCX, structured, chunking, index, retrieval, answering, evaluation), ran
-  them on the corpus after every change, and reported what broke. Several bugs were
-  found that way and fixed (column clipping losing figure labels, identifier boost
-  flooding BM25, a final block sort that undid column ordering, Docling items missing
-  claim markers).
-- **Gold set.** The scanned-page transcription, table cells, figure labels and
-  reading-order anchors in `gold/` were produced by the assistant reading the page
-  images, then checked by the author. The adversarial unanswerable questions were
-  written by the assistant and checked against the corpus.
-- **Verification habit.** Claims about library behaviour were checked against the
-  installed source (e.g. Docling's `reading_order_rb.py`, pdfplumber's edge snapping)
-  and against measurements on this corpus before being written into
-  `docs/extraction.md`. One early claim (that Docling dropped four lines of text) was
-  retracted after checking its markdown export: the lines were merged, not lost.
+## How the work was split
 
-What the assistant did not decide: the backend comparison plan, the choice of the
-Anthropic API and model tiers, installing LibreOffice, the external benchmark choice,
-and the policy of citing every page a split table spans were all the author's calls.
+I treated the assistant as a fast pair programmer and kept the decisions. My side of it:
+
+- Set the direction at each phase (PDF extraction first, then DOCX, structured files, indexing,
+  answering, evaluation) and reviewed each design in conversation before any code was written.
+- Made the calls that shaped the system: comparing a hand-built extraction stack against
+  Docling before choosing, keeping Tesseract as the only OCR engine, the Anthropic API and the
+  model tiers, installing LibreOffice for DOCX page numbers, choosing OmniDocBench and a set of
+  real documents as external evaluation data, citing every page a split table spans, and
+  removing the losing alternatives from the code once the comparison was done.
+- Reviewed the external evaluation questions and the gold data before they were used, and
+  reviewed every results table before it went into the README.
+
+The assistant's side: literature research before each module (chunking, retrieval, embedding
+models, figure question answering and abstention, each as a sourced findings file), writing
+the code and tests, running them on the corpus after every change and reporting what broke,
+drafting the documentation, and sourcing the external documents.
+
+## How I checked its work
+
+- **Measurement over opinion.** Every "X is better than Y" in the README is backed by a number
+  from the evaluation harness, and the harness was built before the comparisons were run.
+- **Claims about libraries were checked against their source.** For example how Docling
+  orders blocks (its `reading_order_rb.py`) and how pdfplumber snaps table edges, before
+  either was described in `docs/extraction.md`.
+- **Mistakes were caught and corrected.** The assistant once reported that Docling had
+  dropped four lines of text; checking its Markdown export showed the lines were merged, not
+  lost, and the claim was withdrawn. It mis-transcribed one external-corpus reference answer
+  (a timestamp ordering) and a few figure labels in the gold set, found when the evaluation
+  disagreed with the gold and the page image was re-read. Its first evaluation run also counted
+  stale figure descriptions from an earlier run, which inflated one metric until the ingest
+  was made to clear them.
+- **Clean-room runs.** The final code was set up and run three times from a fresh copy with
+  no caches and no downloaded models, to make sure the one-command setup and the numbers hold
+  outside the machine state it was developed in.
+

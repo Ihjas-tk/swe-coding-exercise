@@ -1,4 +1,4 @@
-"""Table extraction (native backend): pdfplumber for the grid, PyMuPDF for the text.
+"""Table extraction from the PDF structure: pdfplumber for the grid, PyMuPDF for the text.
 
 How pdfplumber finds tables
 ---------------------------

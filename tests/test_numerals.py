@@ -19,7 +19,6 @@ def make_doc(pages: list[list[str]], name: str = "X.pdf", role: str = "body") ->
     return ParsedDocument(
         doc=name,
         source_path=name,
-        backend="native",
         pages=[
             Page(
                 number=i + 1,

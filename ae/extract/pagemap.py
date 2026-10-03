@@ -11,8 +11,8 @@ If LibreOffice is not installed, every block is reported on page 1 with a
 synthetic bbox and `ParsedDocument.meta["page_mapping"] == "unavailable"`, so the
 limitation is visible in the output rather than silent.
 
-`BlockPlacer` and `assemble_pages` are shared by both DOCX parsers (native python-docx
-and Docling's OOXML backend), so both locate blocks and fall back identically.
+`BlockPlacer` and `assemble_pages` are what the python-docx parser (`ae/extract/native/docx.py`)
+uses to place its blocks.
 """
 
 from __future__ import annotations
@@ -192,14 +192,14 @@ class BlockPlacer:
 
 
 def assemble_pages(
-    items: list[tuple[int, Block]], locator: PageLocator | None, fallback_size: tuple[float, float], backend: str
+    items: list[tuple[int, Block]], locator: PageLocator | None, fallback_size: tuple[float, float]
 ) -> list[Page]:
     """Group (page, block) pairs into Pages sized like the render (one page when there is none)."""
     n_pages = len(locator.sizes) if locator else 1
     pages = []
     for pno in range(1, n_pages + 1):
         w, h = locator.sizes[pno - 1] if locator else fallback_size
-        pages.append(Page(number=pno, width=w, height=h, blocks=[b for p, b in items if p == pno], backend=backend))
+        pages.append(Page(number=pno, width=w, height=h, blocks=[b for p, b in items if p == pno]))
     return pages
 
 

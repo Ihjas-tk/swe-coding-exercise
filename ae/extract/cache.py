@@ -1,8 +1,9 @@
-"""Per-page extraction cache keyed on (backend, backend version, file hash).
+"""Per-page extraction cache keyed on (stage, stage version, file hash).
 
-Re-running ingest on an unchanged file is free; changing a backend's VERSION
-constant invalidates only that backend's entries. This is what keeps a 100-page
-PDF tractable during iteration: pages are parsed once.
+Two stages are cached: `native` (the full parsed page) and `layout` (Docling's table and
+figure blocks for a page). Re-running ingest on an unchanged file is free; changing a
+stage's VERSION constant invalidates only that stage's entries. This is what keeps a
+100-page PDF tractable during iteration: pages are parsed once.
 """
 
 from __future__ import annotations
@@ -30,10 +31,10 @@ def file_hash(path: Path) -> str:
 
 
 class PageCache:
-    """Per-page JSON cache for one (backend, version, file), under CACHE_ROOT/<backend>/v<version>/."""
+    """Per-page JSON cache for one (stage, version, file), under CACHE_ROOT/<stage>/v<version>/."""
 
-    def __init__(self, backend: str, version: str, path: Path) -> None:
-        self.dir = CACHE_ROOT / backend / f"v{version}" / f"{path.stem}_{file_hash(path)}"
+    def __init__(self, stage: str, version: str, path: Path) -> None:
+        self.dir = CACHE_ROOT / stage / f"v{version}" / f"{path.stem}_{file_hash(path)}"
 
     def get(self, page_no: int) -> Page | None:
         """Return the cached page, or None."""

@@ -1,8 +1,11 @@
-"""OmniDocBench slice (English, double-column; 106 pages) for all backends.
+"""OmniDocBench slice (English, double-column; 106 pages).
 
-All pages are images wrapped as PDFs, so every backend runs its OCR path here; this
-benchmark therefore measures scanned-page behaviour: text accuracy, reading order,
-table structure from pixels, figure detection. Metrics follow the benchmark's spirit with
+All pages are images wrapped as PDFs, so every page takes the OCR path (Tesseract text plus
+the Docling layout pass); this benchmark therefore measures scanned-page behaviour: text
+accuracy, reading order, table structure from pixels, figure detection.
+
+Input: the `ae extract` dumps in data/external/omnidocbench/extracted/ (`ae prep-external`,
+then `ae extract data/external/omnidocbench/pdfs/*.pdf --out data/external/omnidocbench/extracted`). Metrics follow the benchmark's spirit with
 our own implementations (the official toolkit expects its own output format):
 - text NED: 1 - normalised Levenshtein between the page text in reading order and the
   ground-truth blocks concatenated in annotated `order` (text_block, title, captions,
@@ -27,6 +30,7 @@ from ae.eval.extraction import _norm
 from ae.schema import BBox, ParsedDocument, TableBlock
 
 ROOT = Path("data/external/omnidocbench")
+EXTRACTED = ROOT / "extracted"
 TEXT_CATS = {
     "text_block",
     "title",
@@ -102,10 +106,15 @@ def teds(html_a: str, html_b: str) -> float:
     return max(0.0, 1.0 - d / max(size(a), size(b)))
 
 
-def evaluate(backend: str) -> dict:
-    """Score one backend's OmniDocBench extractions (text, reading order, TEDS, figure recall)."""
+def available() -> bool:
+    """Return True when the subset annotations and at least one extraction dump exist."""
+    return (ROOT / "subset_en_double_column.json").exists() and any(EXTRACTED.glob("*.json"))
+
+
+def evaluate() -> dict:
+    """Score the OmniDocBench extractions (text, reading order, TEDS, figure recall)."""
     gts = _gt_pages()
-    ex_dir = ROOT / "extracted" / backend
+    ex_dir = EXTRACTED
     text_scores, order_scores, teds_scores, fig_hits, fig_total, n = [], [], [], 0, 0, 0
     for pg in gts:
         stem = Path(pg["page_info"]["image_path"]).stem
@@ -141,7 +150,6 @@ def evaluate(backend: str) -> dict:
         return round(sum(xs) / len(xs), 3) if xs else None
 
     return {
-        "backend": backend,
         "pages": n,
         "text_similarity": avg(text_scores),
         "reading_order_pair_acc": avg(order_scores),

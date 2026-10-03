@@ -1,6 +1,6 @@
 """End-to-end ingest: extract -> structured load -> numerals -> (VLM) -> chunks -> index (-> embeddings).
 
-One index file per backend (`ae.index.store.index_db`). Every stage is cached upstream
+One index file per namespace (`ae.index.store.index_db`). Every stage is cached upstream
 (pages, renders, VLM descriptions, embeddings), so re-ingesting an unchanged corpus only
 rebuilds the SQLite index.
 """
@@ -28,23 +28,22 @@ log = get_logger(__name__)
 
 
 def ingest(
-    backend: str = "native",
     files: list[Path] | None = None,
     use_cache: bool = True,
     embed_model: str | None = None,
     vlm: bool = False,
 ) -> dict[str, Any]:
-    """Build (replace) the index for `backend` from `files` (default: the corpus) and return its stats.
+    """Build (replace) the index of the active namespace from `files` (default: the corpus) and return its stats.
 
     PDF/DOCX go through extraction, CSV/XLSX through the structured loader. `vlm=True`
     adds figure descriptions (needs ANTHROPIC_API_KEY; skipped with a warning otherwise);
     `embed_model` adds dense vectors. `use_cache=False` re-parses PDF pages.
     """
     files = files or corpus_files()
-    db = index_db(backend)
+    db = index_db()
     db.parent.mkdir(parents=True, exist_ok=True)
-    log.info(f"ingest backend={backend} files={len(files)} index={db} embed={embed_model or '-'} vlm={vlm}")
-    docs = [parse(f, backend=backend, use_cache=use_cache) for f in files if f.suffix.lower() in DOCUMENT_SUFFIXES]
+    log.info(f"ingest files={len(files)} index={db} embed={embed_model or '-'} vlm={vlm}")
+    docs = [parse(f, use_cache=use_cache) for f in files if f.suffix.lower() in DOCUMENT_SUFFIXES]
     structured = [f for f in files if f.suffix.lower() in STRUCTURED_SUFFIXES]
     if structured:
         load_structured(structured, db)
@@ -61,7 +60,7 @@ def ingest(
         chunks += structured_chunks(db)
     store = IndexStore(db)
     try:
-        store.rebuild(chunks, backend)
+        store.rebuild(chunks)
         log.info(
             f"indexed {len(chunks)} chunks, {len(numerals.entries)} numerals, {len(numerals.figures)} figure defs -> {db}"
         )
@@ -85,6 +84,8 @@ def _describe_figures(docs: list[ParsedDocument], numerals: NumeralIndex, db: Pa
             "CREATE TABLE IF NOT EXISTS figure_descriptions "
             "(doc TEXT, page INTEGER, figure_id TEXT, image_path TEXT, json TEXT, PRIMARY KEY (doc, page, image_path))"
         )
+        # Rows of a previous ingest would otherwise survive under old crop paths and feed the eval stale labels.
+        conn.execute("DELETE FROM figure_descriptions")
         for d in docs:
             defined = numerals.defined(d.doc)
             for p in d.pages:

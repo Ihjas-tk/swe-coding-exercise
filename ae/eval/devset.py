@@ -18,12 +18,10 @@ TYPE_ORDER = ("factual", "table", "figure", "structured", "unanswerable")
 
 def run(
     questions: Path = Path("dev_set/questions.json"),
-    backend: str | None = None,
-    mode: str = "hybrid",
     out: Path | None = None,
 ) -> list[dict]:
     """Answer every question in the file and return one scored row per question (also written to `out`)."""
-    eng = Engine(backend=backend, mode=mode)
+    eng = Engine()
     rows = [score_question(q, eng.ask(q["question"]), use_grader=False) for q in json.loads(questions.read_text())]
     if out:
         out.parent.mkdir(parents=True, exist_ok=True)

@@ -1,6 +1,6 @@
 """Extraction-stage evaluation against the hand-annotated gold set (gold/).
 
-Metrics (all per backend):
+Metrics:
 - OCR: character and word error rate (jiwer) of the scanned page's text in reading order,
   after light normalisation (whitespace, quotes, dashes).
 - Tables: cell accuracy. Gold rows are aligned to extracted rows by their first cell
@@ -34,15 +34,15 @@ def _norm(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
-def _load_docs(backend: str) -> dict[str, ParsedDocument]:
-    """Parse the corpus through the backend's page cache (built by `make ingest`)."""
+def _load_docs() -> dict[str, ParsedDocument]:
+    """Parse the corpus through the page cache (built by `make ingest`)."""
     from ae.corpus import corpus_files
     from ae.extract.base import parse
 
     out = {}
     for f in corpus_files():
         if f.suffix.lower() in (".pdf", ".docx"):
-            d = parse(f, backend=backend)
+            d = parse(f)
             out[d.doc] = d
     return out
 
@@ -259,15 +259,14 @@ def eval_reading_order(docs: dict[str, ParsedDocument]) -> dict:
     return out
 
 
-def evaluate(backend: str) -> dict:
-    """Run every extraction metric for one backend."""
-    docs = _load_docs(backend)
+def evaluate() -> dict:
+    """Run every extraction metric on the corpus (figure VLM labels come from the active index)."""
+    docs = _load_docs()
     from ae.index.store import index_db
 
     return {
-        "backend": backend,
         "ocr": eval_ocr(docs),
         "tables": eval_tables(docs),
-        "figures": eval_figures(docs, index_db(backend)),
+        "figures": eval_figures(docs, index_db()),
         "reading_order": eval_reading_order(docs),
     }

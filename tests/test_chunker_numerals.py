@@ -1,7 +1,8 @@
-"""Numeral index and chunker against the dev corpus (native-backend extraction must exist).
+"""Numeral index and chunker against the dev corpus (the extraction caches must exist).
 
-Corpus-dependent tests are marked `integration` and skip unless the native page cache
-(and the LibreOffice render cache for DOCX) has been built by `make ingest BACKEND=native`.
+Corpus-dependent tests are marked `integration` and skip unless the page caches (native
+pages, the Docling layout pass for PDFs with OCR'd pages, and the LibreOffice render for
+DOCX) have been built by `make ingest`.
 """
 
 from pathlib import Path
@@ -10,7 +11,7 @@ import pytest
 
 from ae.index.chunker import chunk_document, structured_chunks
 from ae.index.numerals import NumeralIndex, reconcile_labels
-from ae.schema import ParsedDocument
+from ae.schema import Page, ParsedDocument
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = sorted((ROOT / "patents").glob("*.pdf")) + sorted((ROOT / "design_docs").glob("*"))
@@ -20,13 +21,19 @@ _DOCS: dict[str, ParsedDocument] = {}
 def _extraction_cached() -> bool:
     """True when every corpus file can be loaded from cache (no fresh OCR / LibreOffice run)."""
     from ae.extract.cache import CACHE_ROOT, PageCache, file_hash
-    from ae.extract.native.pdf import VERSION
+    from ae.extract.layout_model import VERSION as LAYOUT_VERSION
+    from ae.extract.native.pdf import VERSION as NATIVE_VERSION
 
     if not CORPUS:
         return False
     for p in CORPUS:
-        if p.suffix.lower() == ".pdf" and not (PageCache("native", VERSION, p).dir / "p1.json").exists():
-            return False
+        if p.suffix.lower() == ".pdf":
+            pages = sorted(PageCache("native", NATIVE_VERSION, p).dir.glob("p*.json"))
+            if not pages:
+                return False
+            scanned = any(Page.model_validate_json(f.read_text()).is_scanned for f in pages)
+            if scanned and not (PageCache("layout", LAYOUT_VERSION, p).dir / "p1.json").exists():
+                return False
         if (
             p.suffix.lower() == ".docx"
             and not (CACHE_ROOT / "render" / f"{p.stem}_{file_hash(p)}" / f"{p.stem}.pdf").exists()
@@ -35,16 +42,16 @@ def _extraction_cached() -> bool:
     return True
 
 
-needs_cache = pytest.mark.skipif(not _extraction_cached(), reason="run `make ingest BACKEND=native` first")
+needs_cache = pytest.mark.skipif(not _extraction_cached(), reason="run `make ingest` first")
 
 
 def load(name: str) -> ParsedDocument:
-    """Parse through the native backend's page cache (fast after `make ingest`, correct before it)."""
+    """Parse through the page cache (fast after `make ingest`, correct before it)."""
     if name not in _DOCS:
         from ae.extract.base import parse
 
         path = next(p for p in CORPUS if p.stem == name)
-        _DOCS[name] = parse(path, backend="native")
+        _DOCS[name] = parse(path)
     return _DOCS[name]
 
 

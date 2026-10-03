@@ -1,4 +1,4 @@
-"""Figure extraction and caption linking (native backend).
+"""Figure extraction and caption linking (native PDF extraction).
 
 How PyMuPDF locates images
 --------------------------
@@ -14,7 +14,7 @@ Caption linking (ours)
 Candidate captions are text blocks whose text matches "FIG. N" / "Figure N".
 A figure takes the closest candidate that overlaps it horizontally, preferring
 one directly below, within MAX_CAPTION_GAP points. Figure ids are normalised by
-`ae.extract.captions.figure_id`, shared with the other backends. Captions that sit on the next
+`ae.extract.captions.figure_id`, shared with the DOCX parser and the layout pass. Captions that sit on the next
 page (figure pushed to the bottom of page N, caption at the top of N+1) are
 resolved by the orchestrator after all pages are parsed.
 
@@ -41,8 +41,8 @@ from ae.schema import BBox, FigureBlock, TableBlock, TextBlock
 
 log = get_logger(__name__)
 
-FIG_DIR = Path("data/extracted/native/figures")
-"""Where the native backend (PDF and DOCX) writes figure crops."""
+FIG_DIR = Path("data/extracted/figures")
+"""Where figure crops are written (native PDF and DOCX figures, and the layout pass's)."""
 MIN_FIGURE_PTS = 60.0
 """Images/drawing clusters smaller than this on a side are icons or rules, not figures."""
 MAX_CAPTION_GAP = 90.0

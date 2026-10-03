@@ -1,9 +1,11 @@
 """Embeddings: local sentence-transformers models, cached per (model, text hash).
 
-Default is ibm-granite/granite-embedding-english-r2 (149M params, 768-d, 8k context,
+The model is ibm-granite/granite-embedding-english-r2 (149M params, 768-d, 8k context,
 Apache-2.0, no query/passage prefixes): best retrieval and table-retrieval scores among
-Apache base-size models in the research notes. BAAI/bge-small-en-v1.5 (33M, 384-d) is the
-fast fallback and the model-swap ablation; it wants a query instruction prefix.
+Apache base-size models in the research notes, and one question better at dense Recall@3
+than BAAI/bge-small-en-v1.5 on the dev set (README, "How the stack was chosen").
+AE_EMBED_MODEL may name any other sentence-transformers model; models not in SPECS are
+used without query/passage prefixes at a 512-token sequence length.
 
 Dense retrieval's job in this system is paraphrase recall ("IP rating" vs "ingress
 protection", "how hot can it run" vs "operating temperature range"). Exact values and
@@ -32,7 +34,7 @@ log = get_logger(__name__)
 DEFAULT_MODEL = "ibm-granite/granite-embedding-english-r2"
 """Model used when a caller names none (the CLI passes config.EMBED_MODEL explicitly)."""
 CACHE_DB = Path("data/cache/embeddings.sqlite")
-"""Vector cache shared by every index and backend (keyed on model + text)."""
+"""Vector cache shared by every index (keyed on model + text)."""
 SQL_BATCH = 500
 """Cache lookups per query; stays under SQLite's bound-parameter limit."""
 CACHE_KEY_HEX_CHARS = 32
@@ -52,15 +54,6 @@ class ModelSpec:
 SPECS = {
     "ibm-granite/granite-embedding-english-r2": ModelSpec(
         "ibm-granite/granite-embedding-english-r2", max_seq_length=1024
-    ),
-    "ibm-granite/granite-embedding-small-english-r2": ModelSpec(
-        "ibm-granite/granite-embedding-small-english-r2", max_seq_length=1024
-    ),
-    "BAAI/bge-small-en-v1.5": ModelSpec(
-        "BAAI/bge-small-en-v1.5", query_prefix="Represent this sentence for searching relevant passages: "
-    ),
-    "BAAI/bge-base-en-v1.5": ModelSpec(
-        "BAAI/bge-base-en-v1.5", query_prefix="Represent this sentence for searching relevant passages: "
     ),
 }
 

@@ -37,24 +37,22 @@ STAGES = ("retrieval", "extraction", "citation", "generation", "abstention")
 
 
 def run(
-    backend: str,
-    mode: str = "hybrid",
     extraction_report: dict | None = None,
     questions: Path = Path("dev_set/questions.json"),
     adversarial: bool = True,
 ) -> dict:
-    """Answer the question file (and the adversarial set) on one backend and score every question."""
-    eng = Engine(backend=backend, mode=mode)
+    """Answer the question file (and the adversarial set) with the active index and score every question."""
+    eng = Engine()
     dev = json.loads(questions.read_text())
     unans = json.loads(Path("gold/unanswerable.json").read_text()) if adversarial else []
-    log.info(f"answer stage: backend={backend} questions={len(dev)} adversarial={len(unans)}")
+    log.info(f"answer stage: questions={len(dev)} adversarial={len(unans)}")
     rows = []
     for q in dev:
         row = {"set": "dev", **score_question(q, eng.ask(q["question"]), use_grader=True)}
         row["stage"] = attribute_failure(row, q, extraction_report) if q["evidence"] else _abstention_stage(row)
         rows.append(row)
     rows += [_adversarial_row(u, eng.ask(u["question"])) for u in unans]
-    return {"backend": backend, "mode": mode, "rows": rows, "summary": summarise(rows)}
+    return {"rows": rows, "summary": summarise(rows)}
 
 
 def _adversarial_row(u: dict, a: Answer) -> dict:

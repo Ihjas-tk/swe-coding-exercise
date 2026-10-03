@@ -6,13 +6,13 @@ from ae.index.store import IndexStore, index_db
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skipif(not index_db("native").exists(), reason="run `make ingest BACKEND=native` first"),
+    pytest.mark.skipif(not index_db("").exists(), reason="run `make ingest` first"),
 ]
 
 
 @pytest.fixture(scope="module")
 def store():
-    s = IndexStore(index_db("native"))
+    s = IndexStore(index_db(""))
     yield s
     s.close()
 

@@ -61,7 +61,7 @@ def make_doc() -> ParsedDocument:
             text("2. The gripper of claim 1, wherein the electromagnet 120a is energised.", y=650),
         ],
     )
-    return ParsedDocument(doc="X.pdf", source_path="X.pdf", backend="native", pages=[p1, p2])
+    return ParsedDocument(doc="X.pdf", source_path="X.pdf", pages=[p1, p2])
 
 
 @pytest.fixture(scope="module")
@@ -150,9 +150,7 @@ def test_headings_become_sections_not_chunks(chunks):
 
 def test_body_blocks_pack_within_token_bounds():
     blocks = [text(words(100, f"b{i}_"), y=50 + i * 10) for i in range(12)]
-    doc = ParsedDocument(
-        doc="Y.pdf", source_path="Y.pdf", backend="native", pages=[Page(number=1, width=612, height=792, blocks=blocks)]
-    )
+    doc = ParsedDocument(doc="Y.pdf", source_path="Y.pdf", pages=[Page(number=1, width=612, height=792, blocks=blocks)])
     texts = [c for c in chunk_document(doc) if c.kind == "text"]
     assert len(texts) > 1
     assert all(n_tokens(c.text) <= MAX_TOKENS for c in texts)
@@ -166,7 +164,6 @@ def test_small_trailing_text_is_merged_into_predecessor():
     doc = ParsedDocument(
         doc="Z.pdf",
         source_path="Z.pdf",
-        backend="native",
         pages=[
             Page(number=1, width=612, height=792, blocks=blocks),
             Page(number=2, width=612, height=792, blocks=blocks2),
@@ -180,7 +177,6 @@ def test_single_oversized_block_is_split_to_the_cap():
     doc = ParsedDocument(
         doc="W.pdf",
         source_path="W.pdf",
-        backend="native",
         pages=[Page(number=1, width=612, height=792, blocks=[text(words(500, "w"))])],
     )
     assert all(n_tokens(c.text) <= MAX_TOKENS for c in chunk_document(doc))
@@ -191,7 +187,6 @@ def test_big_table_whole_chunk_falls_back_to_header_summary():
     doc = ParsedDocument(
         doc="T.pdf",
         source_path="T.pdf",
-        backend="native",
         pages=[Page(number=1, width=612, height=792, blocks=[TableBlock(bbox=box(100), rows=rows, title="Parts")])],
     )
     table = next(c for c in chunk_document(doc) if c.kind == "table")
@@ -207,7 +202,6 @@ def test_doc_title_falls_back_to_file_stem():
     doc = ParsedDocument(
         doc="EV-BMS-100_design_document.pdf",
         source_path="x",
-        backend="native",
         pages=[Page(number=1, width=612, height=792, blocks=[text(words(70, "x"))])],
     )
     assert chunk_document(doc)[0].prefix == "EV-BMS-100_design_document › p.1"

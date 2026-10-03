@@ -1,4 +1,4 @@
-"""SQLite index: chunks + FTS5 keyword indexes + embedding blobs. One file per backend.
+"""SQLite index: chunks + FTS5 keyword indexes + embedding blobs, in one file per index namespace.
 
 Keyword search uses three FTS5 tables because one table cannot mix tokenizers:
 - chunks_fts  : prefix + text, `unicode61 remove_diacritics 2` with Porter stemming, for prose;
@@ -34,7 +34,9 @@ from ae.index.identifiers import extract_identifiers
 from ae.schema import BBox
 
 INDEX_DIR = Path("data/index")
-"""Root of the per-backend index files (namespaced by config.INDEX)."""
+"""Root of the index files: INDEX_DIR/<namespace>/index.sqlite."""
+DEFAULT_INDEX = "default"
+"""Namespace of the full-corpus index (used when neither --name nor AE_INDEX is set)."""
 PROSE_WEIGHT = 1.0
 """Weight of the max-normalised prose BM25 component."""
 ID_WEIGHT = 0.6
@@ -81,10 +83,10 @@ STOP = {
 """Question words dropped from the prose query (BM25 would otherwise reward them)."""
 
 
-def index_db(backend: str, name: str | None = None) -> Path:
-    """Path of a backend's index file within the index namespace (`name`, default config.INDEX)."""
+def index_db(name: str | None = None) -> Path:
+    """Path of the index file of namespace `name` (default config.INDEX; empty means DEFAULT_INDEX)."""
     name = config.INDEX if name is None else name
-    return (INDEX_DIR / name if name else INDEX_DIR) / f"{backend}.sqlite"
+    return INDEX_DIR / (name or DEFAULT_INDEX) / "index.sqlite"
 
 
 @dataclass
@@ -116,7 +118,7 @@ class IndexStore:
             """
             CREATE TABLE IF NOT EXISTS chunks (
                 rowid INTEGER PRIMARY KEY, id TEXT UNIQUE, doc TEXT, page INTEGER, kind TEXT, text TEXT, prefix TEXT,
-                section TEXT, bbox TEXT, ids TEXT, meta TEXT, backend TEXT);
+                section TEXT, bbox TEXT, ids TEXT, meta TEXT);
             CREATE INDEX IF NOT EXISTS chunks_doc_page ON chunks(doc, page);
             CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(prefix, text, content='chunks', content_rowid='rowid',
                 tokenize='porter unicode61 remove_diacritics 2');
@@ -129,7 +131,7 @@ class IndexStore:
         )
 
     # ------------------------------------------------------------------ writes
-    def rebuild(self, chunks: list[Chunk], backend: str) -> None:
+    def rebuild(self, chunks: list[Chunk]) -> None:
         """Replace all chunks and rebuild the FTS indexes; keeps embeddings of surviving chunks."""
         c = self.conn
         c.execute("DELETE FROM chunks")
@@ -137,7 +139,7 @@ class IndexStore:
             c.execute(f"INSERT INTO {t}({t}) VALUES('delete-all')")
         for ch in chunks:
             c.execute(
-                "INSERT INTO chunks(id, doc, page, kind, text, prefix, section, bbox, ids, meta, backend) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO chunks(id, doc, page, kind, text, prefix, section, bbox, ids, meta) VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (
                     ch.id,
                     ch.doc,
@@ -149,15 +151,13 @@ class IndexStore:
                     ch.bbox.model_dump_json() if ch.bbox else None,
                     " ".join(ch.identifiers),
                     json.dumps(ch.meta),
-                    ch.backend or backend,
                 ),
             )
         for t in ("chunks_fts", "chunks_ids", "chunks_tri"):
             c.execute(f"INSERT INTO {t}({t}) VALUES('rebuild')")
-        # Keep embeddings of every model for chunks that still exist (ablations swap models).
+        # Keep the embeddings of chunks that still exist (of every model, so an AE_EMBED_MODEL swap and back is free).
         c.execute("DELETE FROM embeddings WHERE chunk_id NOT IN (SELECT id FROM chunks)")
         self._matrix.clear()
-        c.execute("INSERT OR REPLACE INTO index_meta VALUES ('backend', ?)", (backend,))
         c.execute("INSERT OR REPLACE INTO index_meta VALUES ('n_chunks', ?)", (str(len(chunks)),))
         c.commit()
 
@@ -217,7 +217,6 @@ class IndexStore:
             bbox=BBox.model_validate_json(r["bbox"]) if r["bbox"] else None,
             identifiers=(r["ids"] or "").split(),
             meta=json.loads(r["meta"] or "{}"),
-            backend=r["backend"],
         )
 
     # ------------------------------------------------------------------ keyword search

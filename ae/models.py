@@ -6,14 +6,15 @@ where sentence-transformers and Docling look at run time, so a prefetched model 
 downloaded twice.
 
 What is fetched:
-- the embedding model (`AE_EMBED_MODEL`, default granite-embedding-english-r2, ~290 MB) and
-  the bge-small fallback (~130 MB); safetensors weights only when the repo has them (the
-  duplicate `pytorch_model.bin` and ONNX exports are skipped);
-- Docling's layout model (heron, ~165 MB) and TableFormer weights (~340 MB).
+- the embedding model (`AE_EMBED_MODEL`, default granite-embedding-english-r2, ~290 MB);
+  safetensors weights only when the repo has them (the duplicate `pytorch_model.bin` and
+  ONNX exports are skipped);
+- Docling's layout model (heron, ~165 MB) and TableFormer weights (~340 MB), used by the
+  layout pass on OCR'd PDF pages.
 
 Why not `docling.utils.model_downloader.download_models()`: in docling 2.132 it writes into
 a `local_dir` under `~/.cache/docling/models`, which the default pipeline (no
-`artifacts_path`, as in `ae/extract/docling_backend.py`) never reads; the pipeline calls
+`artifacts_path`, as in `ae/extract/layout_model.py`) never reads; the pipeline calls
 `download_hf_model(..., local_dir=None)`, i.e. the hub cache. We call the same functions
 the pipeline calls, so the files are exactly the ones it will look for.
 """
@@ -26,7 +27,6 @@ from pathlib import Path
 
 from ae import config  # loads .env first, so HF_HOME / HF_HUB_CACHE / HF_ENDPOINT set there apply
 
-FALLBACK_EMBED = "BAAI/bge-small-en-v1.5"
 # Docling repos used by the standard PDF pipeline with our options (layout + TableFormer;
 # picture classification, code/formula enrichment and picture description are off).
 DOCLING_REPOS = ("docling-project/docling-layout-heron", "docling-project/docling-models")
@@ -97,8 +97,8 @@ def download_docling() -> list[Path]:
     ]
 
 
-def prefetch(embed_model: str | None = None, fallback: bool = True, docling: bool = True) -> list[str]:
-    """Download the embedding model (+ bge-small fallback) and the Docling models; return local paths.
+def prefetch(embed_model: str | None = None, docling: bool = True) -> list[str]:
+    """Download the embedding model and the Docling models; return local paths.
 
     Prints one line per model with its size and location. Every model is attempted; if any
     failed, raises RuntimeError at the end listing them (the others are still cached).
@@ -108,8 +108,6 @@ def prefetch(embed_model: str | None = None, fallback: bool = True, docling: boo
     jobs: list[tuple[str, bool, Callable[[], list[Path]]]] = [
         (model, is_cached(model), lambda: [download_embedding(model)])
     ]
-    if fallback and model != FALLBACK_EMBED:
-        jobs.append((FALLBACK_EMBED, is_cached(FALLBACK_EMBED), lambda: [download_embedding(FALLBACK_EMBED)]))
     if docling:
         jobs.append(("docling layout + TableFormer", all(is_cached(r) for r in DOCLING_REPOS), download_docling))
 

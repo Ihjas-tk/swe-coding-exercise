@@ -5,7 +5,7 @@ labels evidence pages, not extraction quality).
 
 | File | Covers | How it was made |
 |---|---|---|
-| `ocr/US2988237A_programmed_article_transfer_p1.txt` | full text of the scanned patent's page 1 in reading order (figure labels excluded, caption included) | transcribed from the page image at 110 dpi by the author, re-read once against the image |
+| `ocr/US2988237A_programmed_article_transfer_p1.txt` | full text of the scanned patent's page 1 in reading order (figure labels excluded, caption included) | transcribed from the page image at 110 dpi by the AI assistant (see docs/ai-tools.md), re-read once against the image and checked by the author |
 | `tables.json` | all four spec tables, cell by cell | design-doc PDFs read visually; RJA-40 taken from the DOCX XML (exact). The Falcon "Processor" row follows the *visually intended* cells, although the PDF overprints two cells |
 | `figures.json` | every figure: page, id, caption (or prefix), caption page when different, reference numerals visible in the drawing | read from the figure crops / page images |
 | `reading_order.json` | ordered paragraph anchors for three patent pages (two-column, one scanned) | from the page images |

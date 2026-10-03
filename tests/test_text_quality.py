@@ -1,4 +1,4 @@
-"""Text-layer quality scoring and the per-page OCR trigger (native backend)."""
+"""Text-layer quality scoring and the per-page OCR trigger."""
 
 import pymupdf
 

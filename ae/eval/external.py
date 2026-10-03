@@ -5,10 +5,10 @@ a changed checksum is reported, not fatal: publishers update files) plus selecte
 2013 table-competition PDFs from their zip.
 
 OmniDocBench ships page *images*, not PDFs. Each image is wrapped into a
-single-page, image-only PDF at the annotated page size so every backend runs on
+single-page, image-only PDF at the annotated page size so the pipeline runs on
 it through its normal entry point. By construction these pages hit the OCR
 path, so this benchmark measures: OCR text accuracy, two-column reading order,
-and (for backends that detect tables from pixels) table structure.
+table structure and figure detection from pixels (the Docling layout pass).
 """
 
 from __future__ import annotations

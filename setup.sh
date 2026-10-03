@@ -12,7 +12,7 @@
 #   uv + Python deps from scratch .......................... +1-2 min (~1.5 GB of wheels incl. torch)
 #   Tesseract via Homebrew / apt ........................... +1-3 min
 #   LibreOffice (Homebrew cask ~700 MB / apt ~300 MB) ...... +2-5 min (optional)
-#   models (embedding ~290 MB, bge-small ~130 MB, Docling ~500 MB) ... +1-3 min
+#   models (embedding ~290 MB, Docling ~500 MB) ............ +1-3 min
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -198,9 +198,9 @@ fi
 # ---------------------------------------------------------------------------------------
 log "7/7 Models (Hugging Face cache) and environment check"
 if [ "${SKIP_MODELS:-0}" = 1 ]; then
-  warn "SKIP_MODELS=1: models download on first ingest instead (~920 MB)"
+  warn "SKIP_MODELS=1: models download on first ingest instead (~790 MB)"
 else
-  info "embedding model + bge-small fallback + Docling layout/TableFormer (~920 MB on first run)"
+  info "embedding model + Docling layout/TableFormer (~790 MB on first run)"
   if ! uv run python -c "from ae import config; from ae.models import prefetch; prefetch(config.EMBED_MODEL)"; then
     warn "model pre-download failed; they will download on first ingest (see README > Troubleshooting)"
   fi
@@ -218,10 +218,10 @@ cat <<'EOF'
 
 Next steps:
   1. Make sure ANTHROPIC_API_KEY is set in .env
-  2. make smoke                 # ~6 min: one file of each type, ingest + ask + 9 dev questions
-  3. make ingest                # default (hybrid) index for the full corpus
-     make ask Q="What is the maximum discharge current rating of the EV-BMS-100?"
-  4. make eval                  # ~6 min: staged evaluation -> data/eval/RESULTS.md
+  2. make ingest                # ~2 min: index the 9 files in patents/ design_docs/ structured/
+  3. make ask Q="What is the maximum discharge current rating of the EV-BMS-100?"
+  4. make eval                  # ~3 min: staged evaluation -> data/eval/RESULTS.md
+  Optional: make smoke          # ~4 min self-test on one file of each type, in its own index
   make help lists every target.
 EOF
 exit "$CHECK_RC"

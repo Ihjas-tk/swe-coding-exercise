@@ -1,4 +1,4 @@
-"""Text blocks and reading order (native backend).
+"""Text blocks and reading order (PDF text layer and OCR).
 
 How PyMuPDF gives us text
 -------------------------

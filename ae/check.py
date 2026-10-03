@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 
 from ae import config
-from ae.extract.base import BACKENDS
 
 
 def _ok(name: str, detail: str) -> tuple[str, str, str]:
@@ -159,35 +158,29 @@ def run_checks() -> list[tuple[str, str, str]]:
         if len(dl) == len(DOCLING_REPOS)
         else _warn(
             "docling models",
-            f"{len(dl)}/{len(DOCLING_REPOS)} cached — `make models` (or first docling/hybrid ingest) downloads ~500 MB",
+            f"{len(dl)}/{len(DOCLING_REPOS)} cached — `make models` (or the first ingest of a scanned PDF) downloads ~500 MB",
         )
     )
-    # indexes
+    # index
+    from ae.answer.pipeline import ingest_hint
     from ae.index.store import index_db
 
-    for be in BACKENDS:
-        db = index_db(be)
-        if db.exists():
-            try:
-                conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
-                n = conn.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
-                ne = conn.execute("SELECT COUNT(DISTINCT model) FROM embeddings").fetchone()[0]
-                conn.close()
-                out.append(
-                    _ok(f"index {be}", f"{n} chunks, {ne} embedding model(s)")
-                    if n
-                    else _warn(f"index {be}", "exists but empty — run `make ingest BACKEND=" + be + "`")
-                )
-            except sqlite3.OperationalError as e:
-                out.append(_warn(f"index {be}", f"unreadable: {e}"))
-        else:
+    db = index_db()
+    if db.exists():
+        try:
+            conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+            n = conn.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
+            ne = conn.execute("SELECT COUNT(DISTINCT model) FROM embeddings").fetchone()[0]
+            conn.close()
             out.append(
-                _warn(
-                    f"index {be}",
-                    f"missing — `make ingest BACKEND={be}`"
-                    + (" (default backend for `make ask`)" if be == config.BACKEND else ""),
-                )
+                _ok("index", f"{db}: {n} chunks, {ne} embedding model(s)")
+                if n
+                else _warn("index", f"{db} exists but is empty — run {ingest_hint()}")
             )
+        except sqlite3.OperationalError as e:
+            out.append(_warn("index", f"{db} unreadable: {e}"))
+    else:
+        out.append(_warn("index", f"{db} missing — run {ingest_hint()} (needed by `make ask` / `make eval`)"))
     # disk / memory
     try:
         import psutil

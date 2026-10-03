@@ -230,3 +230,6 @@ data/
 docs/data/external/
 data/logs/
 data/smoke/
+
+# internal notes (not part of the submission)
+internal-docs/

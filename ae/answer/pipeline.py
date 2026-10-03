@@ -20,16 +20,16 @@ log = get_logger(__name__)
 NOT_FOUND_TEXT = "Not found in the provided documents."
 
 
-def ingest_hint(backend: str) -> str:
-    """Return the command that builds `index_db(backend)` in the active index namespace."""
+def ingest_hint() -> str:
+    """Return the command that builds `index_db()`, the index of the active namespace."""
     name = config.INDEX
     if not name:
-        return f"`make ingest BACKEND={backend}`"
+        return "`make ingest`"
     if name == "smoke":
         return "`make smoke`"
     if name == "ext":
         return "`make external`"
-    return f"`uv run ae ingest --backend {backend} --corpus <dir> --name {name}`"
+    return f"`uv run ae ingest --corpus <dir> --name {name}`"
 
 
 @dataclass
@@ -52,22 +52,14 @@ class Answer:
 class Engine:
     """Loads one index and answers questions against it (parse, route, retrieve, generate, verify)."""
 
-    def __init__(
-        self,
-        backend: str | None = None,
-        embed_model: str | None = None,
-        mode: str = "hybrid",
-        min_top_score: float = 0.0,
-    ):
-        self.backend = backend or config.BACKEND
-        self.db = index_db(self.backend)
+    def __init__(self, embed_model: str | None = None, min_top_score: float = 0.0):
+        self.db = index_db()
         if not self.db.exists():
-            raise FileNotFoundError(f"index {self.db} not found; build it with {ingest_hint(self.backend)}")
+            raise FileNotFoundError(f"index {self.db} not found; build it with {ingest_hint()}")
         self.store = IndexStore(self.db)
         self.aliases = doc_aliases(self.store)
         self.numerals = NumeralIndex.load(self.db)
         self.embed_model = embed_model or config.EMBED_MODEL
-        self.mode = mode
         self.min_top_score = min_top_score
         self.split_tables = self._split_tables()
 
@@ -165,8 +157,8 @@ class Engine:
     def _ask(self, question: str) -> Answer:
         """Parse -> retrieve -> route evidence -> (gate) -> generate -> verify."""
         pq = parse_query(question, self.store, self.aliases)
-        dbg = _parse_debug(pq, self.backend)
-        result = retrieve(self.store, pq, self.embed_model, mode=self.mode)
+        dbg = _parse_debug(pq)
+        result = retrieve(self.store, pq, self.embed_model)
         dbg["gate"] = result.gate
         dbg["pages"] = [(p.doc, p.page, round(p.score, 4)) for p in result.pages]
         numeral_block = self._numeral_lookup(pq) if pq.route == "numeral" else None
@@ -219,7 +211,7 @@ class Engine:
         return Answer(draft.answer, cits, False, dbg)
 
 
-def _parse_debug(pq: ParsedQuery, backend: str) -> dict:
+def _parse_debug(pq: ParsedQuery) -> dict:
     """Record the parser's decisions for `Answer.debug`."""
     return {
         "route": pq.route,
@@ -230,5 +222,4 @@ def _parse_debug(pq: ParsedQuery, backend: str) -> dict:
         "numerals": pq.numerals,
         "identifiers": pq.identifiers,
         "visual": pq.visual,
-        "backend": backend,
     }

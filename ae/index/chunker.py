@@ -69,7 +69,6 @@ class Chunk(BaseModel):
     bbox: BBox | None = None
     identifiers: list[str] = Field(default_factory=list)
     meta: dict[str, Any] = Field(default_factory=dict)
-    backend: str | None = None
 
     @property
     def full_text(self) -> str:
@@ -208,7 +207,6 @@ class _DocumentChunker:
                 bbox=bbox,
                 identifiers=extract_identifiers(text, self.known),
                 meta=meta or {},
-                backend=self.doc.backend,
             )
         )
 

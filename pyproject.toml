@@ -24,9 +24,6 @@ dependencies = [
 ]
 
 [dependency-groups]
-ablation = [
-    "easyocr>=1.7",
-]
 dev = [
     "mypy>=1.10",
     "pytest>=8.0",
@@ -71,6 +68,6 @@ check_untyped_defs = true
 [tool.pytest.ini_options]
 addopts = "-m 'not api'"
 markers = [
-    "integration: needs the built native page cache / index (`make ingest BACKEND=native`); skips cleanly when absent",
+    "integration: needs the built page cache / index (`make ingest`); skips cleanly when absent",
     "api: needs ANTHROPIC_API_KEY (excluded by default; run with `-m api`)",
 ]

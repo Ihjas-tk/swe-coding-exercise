@@ -1,4 +1,4 @@
-"""OCR for scanned pages (native backend) with Tesseract.
+"""OCR for scanned pages with Tesseract.
 
 When OCR kicks in
 -----------------

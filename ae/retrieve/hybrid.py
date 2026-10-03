@@ -7,6 +7,10 @@
 - Pages are scored as best chunk + 0.1 x sum of the next three fused scores on the page, plus a soft
   boost when the question names the document. Citations are page-level, so pages are the
   unit returned; each page carries its hit chunks first, then same-page neighbours.
+- The evidence handed to the generator is capped at MAX_EVIDENCE_CHUNKS in total: hits are
+  trimmed from the lowest-ranked pages first (every page keeps at least one), then neighbours
+  fill the remaining budget in page-rank order. Most answers cite one or two chunks; the cap
+  keeps the prompt near 3k tokens instead of 6k without changing which pages are retrieved.
 """
 
 from __future__ import annotations
@@ -26,6 +30,7 @@ RRF_K = 60  # the standard RRF constant; flattens rank differences so neither li
 TOP_N = 50  # depth of each ranked list; deeper lists only add noise to a ~300-chunk corpus
 MAX_PAGES = 8  # pages handed to the generator: fits the prompt budget with neighbours attached
 MAX_CHUNKS_PER_PAGE = 10  # hits + neighbours per page; long BOM/test-log pages would otherwise flood the prompt
+MAX_EVIDENCE_CHUNKS = 24  # total chunks across pages: chunking studies put the useful window at 10-20 chunks
 DOC_BOOST = 0.004  # ~ one RRF rank step at the top: breaks ties toward the named document, never overrides relevance
 SUPPORT_WEIGHT = 0.1  # weight of a page's supporting chunks relative to its best chunk
 SUPPORT_CHUNKS = 3  # supporting chunks counted, so 46 log rows on one page cannot outscore one strong hit
@@ -33,7 +38,6 @@ ID_SEARCH_K = 20  # chunks fetched per exact identifier for the exact-ID guarant
 ID_FLOOR_SCORE = 1.0 / (RRF_K + TOP_N)  # an identifier-only hit ranks just below the last fused rank
 GATE_GAP_RANK = 5  # the not-found gate compares the top fused score with the 5th
 AGREEMENT_TOP = 5  # BM25 and dense "agree" when their top-5 lists share a chunk
-RETRIEVAL_MODES = ("hybrid", "bm25", "dense")
 
 
 @dataclass
@@ -67,35 +71,32 @@ def rrf(lists: list[list[str]], k: int = RRF_K) -> dict[str, float]:
 
 
 def retrieve(
-    store: IndexStore, pq: ParsedQuery, embed_model: str | None = None, mode: str = "hybrid", max_pages: int = MAX_PAGES
+    store: IndexStore, pq: ParsedQuery, embed_model: str | None = None, max_pages: int = MAX_PAGES
 ) -> RetrievalResult:
     """BM25 and dense search fused with RRF, then scored and grouped by page.
 
-    `mode` is an ablation switch (bm25 / dense / hybrid). An index without embeddings for
-    `embed_model` silently degrades to keyword-only, with a warning.
+    An index without embeddings for `embed_model` degrades to keyword-only, with a warning.
     """
-    bm25_ids, dense_ids = _rankings(store, pq, embed_model or config.EMBED_MODEL, mode)
+    bm25_ids, dense_ids = _rankings(store, pq, embed_model or config.EMBED_MODEL)
     fused = rrf([lst for lst in (bm25_ids, dense_ids) if lst])
     _add_identifier_hits(store, pq, fused)
     pages = _score_pages(store, pq, fused)[:max_pages]
-    _fill_neighbours(store, pages)
+    _apply_budget(store, pages)
     gate = _gate_signals(fused, pages, bm25_ids, dense_ids)
     log.debug(f"retrieved bm25={len(bm25_ids)} dense={len(dense_ids)} fused={len(fused)} pages={len(pages)}")
     return RetrievalResult(pages, fused, bm25_ids, dense_ids, gate)
 
 
-def _rankings(store: IndexStore, pq: ParsedQuery, embed_model: str, mode: str) -> tuple[list[str], list[str]]:
-    """Top-N chunk ids from BM25 and from dense search (an empty list for a disabled side)."""
-    bm25_ids: list[str] = []
-    if mode in ("hybrid", "bm25"):
-        bm25_ids = [h.chunk_id for h in store.keyword_search(pq.question, k=TOP_N, doc=pq.doc)]
+def _rankings(store: IndexStore, pq: ParsedQuery, embed_model: str) -> tuple[list[str], list[str]]:
+    """Top-N chunk ids from BM25 and from dense search (dense is empty when the index has no vectors)."""
+    bm25_ids = [h.chunk_id for h in store.keyword_search(pq.question, k=TOP_N, doc=pq.doc)]
     dense_ids: list[str] = []
-    if mode in ("hybrid", "dense") and embed_model in store.embedding_models():
+    if embed_model in store.embedding_models():
         from ae.index.embed import embed_query
 
         qv = embed_query(pq.question, embed_model)
         dense_ids = [h.chunk_id for h in store.dense_search(qv, embed_model, k=TOP_N, doc=pq.doc)]
-    elif mode in ("hybrid", "dense"):
+    else:
         log.warning(f"no embeddings for {embed_model} in this index; running keyword-only")
     return bm25_ids, dense_ids
 
@@ -128,16 +129,30 @@ def _score_pages(store: IndexStore, pq: ParsedQuery, fused: dict[str, float]) ->
     return pages
 
 
-def _fill_neighbours(store: IndexStore, pages: list[PageHit]) -> None:
-    """Append each page's remaining chunks (reading order) after its hits, up to the per-page cap."""
+def _apply_budget(store: IndexStore, pages: list[PageHit], budget: int = MAX_EVIDENCE_CHUNKS) -> None:
+    """Fit the pages' chunks into the evidence budget, then fill it with same-page neighbours.
+
+    Hits beyond the budget are dropped from the lowest-ranked pages first (each page keeps its
+    best hit). Neighbours (the page's remaining chunks in reading order) are appended page by
+    page in rank order, up to the per-page cap and the total budget.
+    """
+    total = sum(len(p.chunks) for p in pages)
+    for p in reversed(pages):
+        if total <= budget:
+            break
+        drop = min(len(p.chunks) - 1, total - budget)
+        if drop > 0:
+            del p.chunks[len(p.chunks) - drop :]
+            total -= drop
     for p in pages:
         have = {c.id for c in p.chunks}
         for c in store.page_chunks(p.doc, p.page):
-            if len(p.chunks) >= MAX_CHUNKS_PER_PAGE:
+            if total >= budget or len(p.chunks) >= MAX_CHUNKS_PER_PAGE:
                 break
             if c.id not in have:
                 p.chunks.append(c)
                 have.add(c.id)
+                total += 1
 
 
 def _gate_signals(fused: dict[str, float], pages: list[PageHit], bm25_ids: list[str], dense_ids: list[str]) -> dict:

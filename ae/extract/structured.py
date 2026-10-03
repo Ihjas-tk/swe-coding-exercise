@@ -11,8 +11,8 @@ types, plus:
   also findable by keyword/vector search (the BOM description "planetary +
   harmonic gearset" or a test-log note only exist here).
 
-Both extraction backends share this loader: Docling would flatten these files
-into a document, which is the failure mode the brief warns about.
+CSV/XLSX never go through document extraction: a document parser would flatten
+these files into text, which is the failure mode the brief warns about.
 """
 
 from __future__ import annotations

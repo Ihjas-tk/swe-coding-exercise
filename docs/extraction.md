@@ -1,128 +1,100 @@
 # How extraction works
 
-Three backends produce the same `ParsedDocument` (pages → ordered text / table / figure
-blocks, each with document, page and bounding box). `native` is a hand-assembled stack of
-small libraries; `docling` is IBM's layout-model pipeline; `hybrid` uses `native` for every page and, on pages
-that needed OCR, adds Docling's table and figure blocks (native's text, Docling's layout:
-each where it measured best).
+Extraction turns each file into pages of blocks (text, table, figure), each carrying its
+document, page number and position. For PDFs I built the extraction from three small
+libraries, PyMuPDF, pdfplumber and Tesseract, and use Docling's layout model for one job only:
+finding tables and figures on scanned pages. I compared this with using Docling for everything
+before settling on it; the numbers are in the README under "How the stack was chosen".
 
-## Text and reading order — PyMuPDF (`ae/extract/native/text.py`)
+## Text and reading order: PyMuPDF
 
-**What the library does.** `page.get_text("dict")` walks the page's content stream and
-groups glyphs into spans → lines → blocks using MuPDF's structured-text device: glyphs on
-one baseline become a line, lines with similar font and small vertical gaps become a
-block. Blocks come back in *content-stream order*, i.e. the order the PDF writer emitted
-them, which is usually, but not reliably, the reading order. MuPDF's own `sort=True`
-sorts by (y, x), which interleaves two columns line by line.
+**Under the hood.** PyMuPDF walks the PDF's content stream and groups glyphs into lines and
+blocks by position and font. Blocks come back in the order the file was written, which is
+usually but not always the reading order, and its built-in sort interleaves two columns. So I
+find the columns myself: a block wider than about 60 % of the page is a title or banner that
+splits the page into bands, and the gaps between the narrower blocks in a band give the column
+gutters. Text is emitted band by band, column by column.
 
-**What we do on top.** Measure the text area; any block wider than 62 % of it is a
-"span" block (title, section banner) that splits the page into horizontal bands. Among
-the narrower blocks, merge their x-intervals; every gap wider than 12 pt is a gutter, so
-the number of columns is discovered, not assumed. Emit band by band, column by column.
-A second pass merges paragraph fragments MuPDF split (same column, tiny gap, same font
-size), including a centred last caption line. Roles (heading, caption, header/footer,
-body) come from font size, boldness and regexes.
+**Why.** Exact glyph decoding (pdfminer and Docling's parser both turned "≥" and "•" into
+junk on the design documents), a position for everything, page rendering for OCR, and one
+fast library instead of a pipeline.
 
-**Why PyMuPDF.** Exact glyph decoding (it resolved the `≥` and `•` glyphs pdfminer and
-docling-parse rendered as `‡` and `(cid:127)`), bboxes for everything, image placement
-rectangles, rendering for OCR, one C library, fast (≈0.7 s/page including label OCR).
+**Where it fails here.** Page 1 of the UAV patent has a title block over the left column only,
+and the right column's header line gets read between the abstract and the caption below it:
+reading order on that page scores 0.86. The fix is to let a header that belongs to one column
+act as a separator for that column only.
 
-**Where it breaks on this corpus.** The UAV patent's page 1 scores 0.857 on reading-order
-pairs: the abstract and the figure caption sit in the left column below a left-only title
-block, and the right-column header line is emitted between them. Docling's learned
-layout scores 0.929 on the same page. Fix with more time: treat per-column header lines
-as band separators only within their column.
+## Tables: pdfplumber for the grid, PyMuPDF for the text
 
-## Tables — pdfplumber for the grid, PyMuPDF for the text (`tables.py`)
+**Under the hood.** pdfplumber reads the ruling lines drawn on the page, snaps nearby edges
+together, intersects horizontals with verticals and turns the smallest rectangles into cells.
+I fill each cell with the PyMuPDF words whose centre falls inside it rather than pdfplumber's
+own cell text, which interleaves characters when a value overflows. A row with an empty first
+cell is a wrapped continuation and is merged upward. The fallback that guesses a grid from
+aligned text runs only when there are no ruling lines and never when a guessed edge would cut
+through a word, because on prose it otherwise finds tables that aren't there.
 
-**What pdfplumber does.** It reads vector graphics (`lines`, `rects`) and characters
-via pdfminer.six. `find_tables` with the *lines* strategy takes every ruling line and
-rect edge as a candidate edge, snaps edges within 3 pt and joins collinear segments,
-intersects horizontals with verticals to get cell corners, forms the smallest rectangles
-bounded by intersections as cells, and groups cells sharing edges into tables. The
-*text* strategy synthesises edges from aligned word boundaries instead.
+**Why.** Ruled lines are the truth for these design-document tables, and pdfplumber exposes
+them directly. It gets 115 of the 117 gold cells right.
 
-**What we do differently.** The grid comes from pdfplumber; each cell's text is the set
-of PyMuPDF *words* whose centre lies in the cell, ordered by visual line. Two reasons:
-pdfminer's glyph decoding (above), and pdfplumber assigns *characters* to cells, so when
-text overflows a cell the two cells' characters interleave. The text strategy runs only
-when no ruled table exists and only if no column edge cuts through a word; on prose it
-otherwise "finds" a 19×8 table on a patent page. Rows whose first cell is empty are
-wrapped continuations and are merged upward.
+**Where it fails here.** The Falcon-VT1 "Processor" row: the PDF prints "MHz" and "with" on
+top of each other, so the value overflows into the notes column and every parser splits it the
+same way. I left it rather than teach the parser that units belong with their number. The real
+gap is scanned tables: a bitmap has no ruling lines, so this finds nothing there, which is why
+Docling's layout model runs on scanned pages.
 
-**Where it breaks.** Falcon-VT1 "Processor" row: the PDF itself draws "MHz" and "with" at
-the same coordinates, so the Value cell physically overflows into Notes. We return
-"Dual-core Cortex-M7 @ 480" / "MHz with M4 co-processor" (2 of 30 cells wrong, 0.983
-overall); every parser we tried, Docling included, returns the same split. A fix would
-need semantics (units belong with their number), which we chose not to encode.
-Scanned tables are not detected at all by this backend (no ruling lines in a bitmap); on
-OmniDocBench's 19 scanned tables native scores TEDS 0.0 against Docling's 0.53, which is
-the main reason `hybrid` exists.
+## Figures: PyMuPDF image boxes and caption matching
 
-## Figures — PyMuPDF image rectangles + caption linking (`figures.py`)
+**Under the hood.** PyMuPDF reports every image drawn on the page with the rectangle it was
+painted into, and clusters nearby vector paths into rectangles for line drawings. I keep
+anything bigger than a thumbnail, drop clusters that overlap a table, and link each figure to
+the nearest "FIG. n" or "Figure n" caption that overlaps it horizontally, preferring the one
+below; a caption at the top of the next page is linked to an uncaptioned figure at the bottom
+of the previous one. Numerals on the drawing are read with Tesseract and checked against the
+numerals the specification defines.
 
-**What the library does.** `page.get_image_info()` walks the display list and reports
-every raster image draw with the rectangle it was painted into, so the box is correct
-even when the image is scaled. `page.cluster_drawings()` groups nearby vector paths into
-rectangles for line-art figures.
+**Why.** The image rectangles are exact, so crops and citations are exact, and caption
+matching by position needs nothing learned.
 
-**What we do.** Keep images ≥ 60 pt on a side; drop drawing clusters that overlap a
-detected table (table rulings cluster too). Captions are text blocks matching
-`FIG. n —` / `Figure n —`, nearest with horizontal overlap, preferring below; a bare
-"FIG. 2" title directly above the drawing is absorbed into the figure; a caption at the
-top of the next page is linked to an uncaptioned figure at the bottom of the previous
-one (the BMS enclosure figure). Labels are read from the crop with Tesseract in
-sparse-text mode and reconciled against the numerals the specification defines.
+**Where it fails here.** Tesseract reads "100", "110" and "120" on the gripper drawing as
+"00", "10" and "20" because a leader line touches the "1", and label "160" lies outside the
+embedded image altogether. So what each numeral means is indexed from the specification
+text, where every numeral is defined, and OCR only confirms what is visible.
 
-**Where it breaks.** Reference numerals: Tesseract reads "100/110/120" as "00/10/20"
-because a leader line touches the "1" (label recall 0.39 vs 0.96 for the VLM
-description), and the gripper's "160" is outside the embedded image entirely. We also
-initially clipped figure boxes to their text column and lost labels that sit past the
-column edge; the clip was removed. The numeral index is therefore built from text, and
-OCR only confirms presence.
+## OCR: Tesseract 5
 
-## OCR — Tesseract 5 (`ocr.py`)
+**Under the hood.** A page with no usable text layer is rendered at 300 dpi; Tesseract
+binarises it, finds the column gutters and text blocks, and runs its line recogniser on each
+line. Its paragraphs become positioned blocks that go through the same column-and-band
+ordering as digital pages, so both kinds of page produce the same structure. A page goes to
+OCR when it has almost no text, or when its text fails a plausibility check (symbol soup,
+undecodable glyphs, letters split one per word).
 
-**When it runs.** Per page: fewer than 30 text characters plus a page-covering image
-(no text layer), or a text layer whose tokens fail a plausibility score (symbol soup,
-`(cid:)`, U+FFFD, per-character splitting). Born-digital pages never touch it.
+**Why.** On the scanned patent it reads the page almost perfectly: 0.13 % character error
+rate against a hand transcription. Docling's text on the same page duplicated several header
+blocks (22 % error rate), and the duplication was the same with a different OCR engine inside
+Docling, so the fault is in its layout regions, not its OCR. That is why Tesseract's text is
+kept on scanned pages and only Docling's table and figure boxes are taken from them.
 
-**What Tesseract does.** Otsu binarisation and connected components → page layout
-analysis (`--psm 3`: tab-stop detection finds column gutters, blobs are grouped into
-lines and blocks) → LSTM line recogniser with the English language model, returning
-words with confidences and a block/paragraph/line hierarchy. We render at 300 dpi, turn
-Tesseract paragraphs into blocks with point bboxes and run the same column/band ordering
-as born-digital pages, so both paths produce identical structures.
+**Where it fails here.** On dense two-column scans from the OmniDocBench benchmark it scores
+0.74 on text similarity where Docling's text scored 0.84. Finding and fixing the duplication
+would make Docling's text the better choice for scanned pages.
 
-**Where it breaks.** On the scanned patent it reads "gate 412" for "gate 112" in claim 2
-and "sAcooperate" where the figure label "64" touches the column edge; page CER is still
-0.13 %. Docling on the same page emits several header-area blocks twice ("PROGRAMMED
-ARTICLE TRANSFER PROGRAMMED ARTICLE TRANSFER", the abstract, ...): CER 21.8 % with its
-Tesseract driver and 22.7 % with its default EasyOCR engine, so the duplication comes from
-overlapping layout regions on this page, not from the OCR driver. That measurement is why
-`hybrid` keeps native's OCR text on scanned pages and takes only Docling's table and figure
-boxes from them.
+## Scanned pages: Docling's layout model
 
-## Docling (`ae/extract/docling_backend.py`)
+Docling runs an object detector over the page image that labels regions (text, table,
+picture, caption) and a second model that reads a table region cell by cell. It runs only for
+PDFs with at least one OCR'd page, and only those pages' tables and figures are taken: a
+Tesseract text block inside a Docling table is replaced by the table, and a Docling figure
+that duplicates one already found is dropped. On the 106 benchmark pages it finds 37 of 50
+figures and about half of each table's structure, against nothing without it.
 
-docling-parse (C++ on qpdf) extracts text cells and renders the page; an RT-DETR style
-object detector ("heron", trained on DocLayNet) predicts labelled boxes (text, section
-header, caption, table, picture, list item, page header/footer, formula, code); cells are
-assigned to boxes by overlap; OCR runs on bitmap regions without cells; TableFormer (an
-encoder–decoder transformer) turns each table crop into an OTSL token sequence plus cell
-boxes, matched back to text cells; a rule-based reading-order predictor sorts boxes using
-left-to-right / top-to-bottom "sees" relations. On this corpus it links the title OCR'd
-*inside* a picture as its caption (3 of 9 captions right), strips claim numbers into a
-separate marker field (restored in our mapping), and shares pdfminer's `≥` problem. It
-wins where there is no PDF structure: OmniDocBench text similarity 0.837 vs 0.749,
-reading order 0.979 vs 0.948, 36 of 50 figures vs 0.
+## DOCX, CSV and XLSX
 
-## DOCX — python-docx + LibreOffice render (`docx.py`, `pagemap.py`)
-
-The OOXML body is an ordered list of paragraphs and tables; cells are explicit, images
-are the original bytes, captions are the next paragraph. Nothing is detected. Pages do
-not exist until a layout engine renders the file, so LibreOffice renders it once (cached)
-and each block is located in the render to learn its page; a table that breaks across
-pages becomes one block per page with the header repeated. Known difference: LibreOffice
-puts the RJA-40 spec table's first four rows on page 1, the dev set cites page 2 for
-them (Word keeps the table with its heading); we cite every page a split table spans.
+A DOCX is a list of paragraphs and tables with explicit cells, images and captions, so nothing
+is detected. Pages only exist once something renders the file, so LibreOffice renders it once
+and each block is located in the render to learn its page. LibreOffice and Word don't always
+break pages in the same place: the RJA-40 spec table starts on page 1 here while the dev set
+cites page 2, so a table that breaks across pages is cited with every page it spans. CSV and
+XLSX files become typed SQLite tables; the header is the row with the most text cells and
+column types follow what the values look like.

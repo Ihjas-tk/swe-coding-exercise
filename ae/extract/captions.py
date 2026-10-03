@@ -1,8 +1,8 @@
-"""Caption patterns and figure-id normalisation shared by every extraction backend.
+"""Caption patterns and figure-id normalisation shared by every extraction path.
 
-Native (PDF and DOCX) and Docling all derive `FigureBlock.figure_id` from a caption with
-`figure_id()`, so "FIG. 2", "Fig 2" and "fig.2" index and cite as the same figure whichever
-backend produced them. The canonical forms are the native backend's: "FIG. <n>" for the
+The native PDF and DOCX parsers and the Docling layout pass all derive `FigureBlock.figure_id`
+from a caption with `figure_id()`, so "FIG. 2", "Fig 2" and "fig.2" index and cite as the same
+figure whichever path produced them. The canonical forms are "FIG. <n>" for the
 FIG / Fig. spellings and "Figure <n>" for the spelled-out word (the two are kept apart
 because the design documents and the patents number their figures independently).
 """

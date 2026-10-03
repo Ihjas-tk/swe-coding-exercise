@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import re
 
+from ae import config
 from ae.answer.pipeline import Answer
 from ae.answer.verify import NUMBER_WORDS
 from ae.index.identifiers import numbers_in
@@ -70,6 +71,7 @@ def grade(question: str, reference: str, answer: str) -> dict:
         out = complete_json(
             GRADER,
             f"QUESTION: {question}\nREFERENCE: {reference}\nANSWER: {answer}\n\nJSON:",
+            model=config.GRADER_MODEL,
             max_tokens=GRADER_MAX_TOKENS,
         )
         return {"correct": bool(out.get("correct")), "reason": str(out.get("reason", ""))}
@@ -78,6 +80,7 @@ def grade(question: str, reference: str, answer: str) -> dict:
             verdict = complete(
                 GRADER.split("Reply with")[0] + "Answer with exactly one word: CORRECT or INCORRECT.",
                 f"QUESTION: {question}\nREFERENCE: {reference}\nANSWER: {answer}",
+                model=config.GRADER_MODEL,
                 max_tokens=5,
                 use_cache=False,
             )

@@ -1,4 +1,4 @@
-"""DOCX extraction (native backend) with python-docx.
+"""DOCX extraction with python-docx.
 
 How python-docx reads a document
 --------------------------------
@@ -44,12 +44,11 @@ HEADING_MAX_CHARS = 90
 """A bold numbered/upper-case paragraph shorter than this is a heading even without a heading style."""
 
 
-def parse_docx(path: Path, backend_name: str = "native") -> ParsedDocument:
+def parse_docx(path: Path) -> ParsedDocument:
     """Parse a DOCX from its XML into the shared schema.
 
     Content comes from the XML; pages and boxes come from a LibreOffice render when one is
-    available (`meta["page_mapping"]` says which). `backend_name` is stamped on the result
-    because native and hybrid share this parser. Raises ValueError when the document
+    available (`meta["page_mapping"]` says which). Raises ValueError when the document
     declares no page geometry.
     """
     path = Path(path)
@@ -70,8 +69,7 @@ def parse_docx(path: Path, backend_name: str = "native") -> ParsedDocument:
     return ParsedDocument(
         doc=path.name,
         source_path=str(path),
-        backend=backend_name,
-        pages=assemble_pages(walker.items, locator, (page_w, page_h), backend_name),
+        pages=assemble_pages(walker.items, locator, (page_w, page_h)),
         meta={
             "page_mapping": "libreoffice_render" if locator else "unavailable",
             "rendered_pdf": str(pdf) if pdf else None,
